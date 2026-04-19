@@ -187,29 +187,45 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                {mockTemplates.map((t, i) => (
-                  <Link key={t.id} to="/builder" className="group">
-                    <div className="aspect-[0.77] bg-white rounded-xl shadow border border-slate-100 p-3 hover:shadow-lg hover:-translate-y-1 transition-all overflow-hidden">
-                      <div className="h-4 rounded mb-2 flex items-center px-1.5" style={{ background: t.color }}>
-                        <div className="text-[6px] text-white font-bold">SARAH JOHNSON</div>
+                {mockTemplates.map((t, i) => {
+                  const personas = [
+                    { name: 'SARAH JOHNSON', title: 'Sr. Product Engineer', years: '9+ YRS', exp: [['Senior Engineer · Google', '2022—Now'], ['Software Engineer · Meta', '2019—22'], ['Software Engineer · Stripe', '2016—19']] },
+                    { name: 'MICHAEL CHEN', title: 'Director of Product', years: '10+ YRS', exp: [['Director of Product · Airbnb', '2021—Now'], ['Senior PM · Uber', '2018—21'], ['Product Manager · Dropbox', '2015—18']] },
+                    { name: 'PRIYA PATEL', title: 'Lead UX Designer', years: '8+ YRS', exp: [['Lead Designer · Spotify', '2022—Now'], ['Senior Designer · Uber', '2019—22'], ['Product Designer · Airbnb', '2016—19']] },
+                    { name: 'ALEX RIVERA', title: 'Sr. Data Scientist', years: '7+ YRS', exp: [['Sr. Data Scientist · Netflix', '2021—Now'], ['Data Scientist · Lyft', '2018—21'], ['ML Engineer · Zillow', '2016—18']] },
+                  ];
+                  const p = personas[i % 4];
+                  return (
+                    <Link key={t.id} to="/builder" className="group">
+                      <div className="aspect-[0.77] bg-white rounded-xl shadow border border-slate-100 p-2.5 hover:shadow-lg hover:-translate-y-1 transition-all overflow-hidden">
+                        <div className="pb-1.5 mb-1.5 border-b-2" style={{ borderColor: t.color }}>
+                          <div className="font-extrabold text-[7px] text-slate-900 tracking-wide">{p.name}</div>
+                          <div className="text-[4px] font-bold mt-0.5" style={{ color: t.color }}>{p.title.toUpperCase()} · {p.years}</div>
+                          <div className="text-slate-500 text-[3.5px] mt-0.5">email@mail.com · +1 (555) 555-0100 · linkedin.com/in/prof</div>
+                        </div>
+                        <div className="text-[5px] font-extrabold mb-0.5" style={{ color: t.color }}>SUMMARY</div>
+                        <div className="text-[3.5px] text-slate-600 leading-[1.35] mb-1.5">Senior professional with {p.years.toLowerCase()} building products at top-tier tech companies. Led teams of 10+, shipped products to millions of users.</div>
+                        <div className="text-[5px] font-extrabold mb-0.5" style={{ color: t.color }}>EXPERIENCE</div>
+                        {p.exp.map(([role, pd], j) => (
+                          <div key={j} className="mb-1">
+                            <div className="flex justify-between">
+                              <div className="font-bold text-[3.8px] text-slate-900">{role}</div>
+                              <div className="text-[3.2px] text-slate-500">{pd}</div>
+                            </div>
+                            <div className="text-[3.5px] text-slate-600 leading-[1.3]">• Led major launches with $10M+ revenue impact</div>
+                            <div className="text-[3.5px] text-slate-600 leading-[1.3]">• Scaled systems to support 10M+ users</div>
+                          </div>
+                        ))}
+                        <div className="text-[5px] font-extrabold mb-0.5 mt-1" style={{ color: t.color }}>SKILLS</div>
+                        <div className="text-[3.5px] text-slate-600 leading-[1.3]">Python · React · AWS · TypeScript · PostgreSQL · Docker</div>
                       </div>
-                      <div className="text-[5px] font-bold mb-1.5" style={{ color: t.color }}>SENIOR ENGINEER · 8 YEARS</div>
-                      <div className="text-[5px] font-bold mb-0.5" style={{ color: t.color }}>EXPERIENCE</div>
-                      <div className="text-[4px] text-slate-700 leading-tight mb-0.5 font-semibold">Senior Engineer · Google</div>
-                      <div className="text-[4px] text-slate-500 mb-1">• Built microservices for 10M+ users</div>
-                      <div className="text-[4px] text-slate-500 mb-1">• Reduced latency by 40% via caching</div>
-                      <div className="text-[4px] text-slate-700 leading-tight mb-0.5 font-semibold">Software Engineer · Meta</div>
-                      <div className="text-[4px] text-slate-500 mb-1">• Led team of 8 engineers on ML</div>
-                      <div className="text-[4px] text-slate-500 mb-2">• Shipped real-time ranking system</div>
-                      <div className="text-[5px] font-bold mb-0.5" style={{ color: t.color }}>SKILLS</div>
-                      <div className="text-[4px] text-slate-700 leading-tight">Python · React · AWS · TypeScript · Docker · PostgreSQL</div>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between">
-                      <div className="font-bold text-slate-900 text-sm">{t.name}</div>
-                      <div className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">{t.tag}</div>
-                    </div>
-                  </Link>
-                ))}
+                      <div className="mt-2 flex items-center justify-between">
+                        <div className="font-bold text-slate-900 text-sm">{t.name}</div>
+                        <div className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">{t.tag}</div>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
