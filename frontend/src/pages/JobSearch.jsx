@@ -134,7 +134,10 @@ const JobSearch = () => {
     try {
       const s = localStorage.getItem('covera_profile');
       return s ? JSON.parse(s) : DEFAULT_PROFILE;
-    } catch { return DEFAULT_PROFILE; }
+    } catch (error) {
+      console.error('Failed to parse saved profile:', error);
+      return DEFAULT_PROFILE;
+    }
   });
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [locationInput, setLocationInput] = useState('');

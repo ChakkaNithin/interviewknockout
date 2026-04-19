@@ -12,14 +12,20 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem('covera_token');
       const cachedUser = localStorage.getItem('covera_user');
       if (cachedUser) {
-        try { setUser(JSON.parse(cachedUser)); } catch (e) { /* ignore */ }
+        try {
+          setUser(JSON.parse(cachedUser));
+        } catch (error) {
+          console.error('Failed to parse cached user:', error);
+          localStorage.removeItem('covera_user');
+        }
       }
       if (token) {
         try {
           const fresh = await authApi.me();
           setUser(fresh);
           localStorage.setItem('covera_user', JSON.stringify(fresh));
-        } catch (e) {
+        } catch (error) {
+          console.error('Session expired or invalid:', error);
           localStorage.removeItem('covera_token');
           localStorage.removeItem('covera_user');
           setUser(null);
@@ -28,6 +34,8 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     };
     init();
+    // authApi is a module-level import (stable); safe to omit from deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = async (email, password) => {
