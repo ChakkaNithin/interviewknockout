@@ -189,12 +189,20 @@ const Dashboard = () => {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                 {mockTemplates.map((t, i) => (
                   <Link key={t.id} to="/builder" className="group">
-                    <div className="aspect-[0.77] bg-white rounded-xl shadow border border-slate-100 p-3 hover:shadow-lg hover:-translate-y-1 transition-all">
-                      <div className="h-3 rounded mb-2" style={{ background: t.color }}></div>
-                      <div className="h-1.5 bg-slate-300 rounded w-3/4 mb-3"></div>
-                      <div className="space-y-1 mb-3">{[1,2,3].map(k => <div key={k} className="h-1 bg-slate-200 rounded" style={{width: `${90 - k*5}%`}}></div>)}</div>
-                      <div className="h-1.5 rounded w-1/3 mb-1" style={{ background: t.color }}></div>
-                      <div className="space-y-1">{[1,2,3,4].map(k => <div key={k} className="h-1 bg-slate-200 rounded" style={{width: `${85 - k*5}%`}}></div>)}</div>
+                    <div className="aspect-[0.77] bg-white rounded-xl shadow border border-slate-100 p-3 hover:shadow-lg hover:-translate-y-1 transition-all overflow-hidden">
+                      <div className="h-4 rounded mb-2 flex items-center px-1.5" style={{ background: t.color }}>
+                        <div className="text-[6px] text-white font-bold">SARAH JOHNSON</div>
+                      </div>
+                      <div className="text-[5px] font-bold mb-1.5" style={{ color: t.color }}>SENIOR ENGINEER · 8 YEARS</div>
+                      <div className="text-[5px] font-bold mb-0.5" style={{ color: t.color }}>EXPERIENCE</div>
+                      <div className="text-[4px] text-slate-700 leading-tight mb-0.5 font-semibold">Senior Engineer · Google</div>
+                      <div className="text-[4px] text-slate-500 mb-1">• Built microservices for 10M+ users</div>
+                      <div className="text-[4px] text-slate-500 mb-1">• Reduced latency by 40% via caching</div>
+                      <div className="text-[4px] text-slate-700 leading-tight mb-0.5 font-semibold">Software Engineer · Meta</div>
+                      <div className="text-[4px] text-slate-500 mb-1">• Led team of 8 engineers on ML</div>
+                      <div className="text-[4px] text-slate-500 mb-2">• Shipped real-time ranking system</div>
+                      <div className="text-[5px] font-bold mb-0.5" style={{ color: t.color }}>SKILLS</div>
+                      <div className="text-[4px] text-slate-700 leading-tight">Python · React · AWS · TypeScript · Docker · PostgreSQL</div>
                     </div>
                     <div className="mt-2 flex items-center justify-between">
                       <div className="font-bold text-slate-900 text-sm">{t.name}</div>

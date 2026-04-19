@@ -7,98 +7,148 @@ import { ArrowRight, Star, Check, Sparkles, Target, ShieldCheck, LayoutGrid, Spe
 
 const iconMap = { SpellCheck, Target, LayoutGrid, ShieldCheck };
 
-// CSS-rendered Resume Thumbnail
+// CSS-rendered Resume Thumbnail — realistic filled-in preview
 const ResumeThumbnail = ({ template, index }) => {
   const variant = index % 4;
+  const name = ['SARAH JOHNSON', 'MICHAEL CHEN', 'PRIYA PATEL', 'ALEX RIVERA'][index % 4];
+  const role = ['Senior Engineer', 'Product Manager', 'UX Designer', 'Data Scientist'][index % 4];
   return (
     <div className="relative w-full aspect-[0.77] bg-white rounded-xl shadow-md overflow-hidden border border-slate-100 group-hover:shadow-2xl group-hover:-translate-y-2 transition-all duration-300">
       {variant === 0 && (
-        <div className="flex h-full">
-          <div className="w-1/3 p-3" style={{ background: template.color }}>
-            <div className="w-10 h-10 rounded-full bg-white/30 mb-3"></div>
-            <div className="h-1.5 bg-white/70 rounded mb-1.5 w-full"></div>
-            <div className="h-1 bg-white/50 rounded mb-3 w-3/4"></div>
-            <div className="space-y-1 mt-4">
-              <div className="h-1 bg-white/40 rounded w-full"></div>
-              <div className="h-1 bg-white/40 rounded w-5/6"></div>
-              <div className="h-1 bg-white/40 rounded w-4/6"></div>
+        <div className="flex h-full text-[5px] leading-[1.3]">
+          <div className="w-1/3 p-2.5" style={{ background: template.color }}>
+            <div className="w-8 h-8 rounded-full bg-white/30 mb-2 flex items-center justify-center text-white text-[7px] font-bold">{name.charAt(0)}</div>
+            <div className="text-white font-bold text-[6px] mb-0.5">{name}</div>
+            <div className="text-white/80 text-[4px] mb-2">{role}</div>
+            <div className="space-y-0.5 text-white/70">
+              <div>✉ email@mail.com</div>
+              <div>📞 (555) 123-4567</div>
+              <div>📍 San Francisco, CA</div>
             </div>
+            <div className="mt-2 text-white font-bold text-[5px] border-t border-white/30 pt-1.5">SKILLS</div>
+            <div className="space-y-0.5 mt-1 text-white/80 text-[4px]">
+              <div>• React, TypeScript</div>
+              <div>• Node.js, Python</div>
+              <div>• AWS, Docker</div>
+              <div>• PostgreSQL</div>
+            </div>
+            <div className="mt-2 text-white font-bold text-[5px] border-t border-white/30 pt-1.5">EDUCATION</div>
+            <div className="text-white/80 mt-0.5 text-[4px]">B.S. Computer Science<br/>Stanford University</div>
           </div>
-          <div className="flex-1 p-3">
-            <div className="h-2 bg-slate-800 rounded mb-1 w-2/3"></div>
-            <div className="h-1 bg-slate-400 rounded mb-3 w-1/2"></div>
-            <div className="space-y-1.5">
-              {[1,2,3,4].map(i=>(
-                <div key={i}>
-                  <div className="h-1 bg-slate-700 rounded w-1/2 mb-1"></div>
-                  <div className="h-0.5 bg-slate-300 rounded w-full mb-0.5"></div>
-                  <div className="h-0.5 bg-slate-300 rounded w-5/6"></div>
-                </div>
-              ))}
-            </div>
+          <div className="flex-1 p-2.5 text-slate-800">
+            <div className="font-bold text-[6px] mb-0.5" style={{ color: template.color }}>SUMMARY</div>
+            <div className="text-slate-600 text-[4px] leading-[1.4] mb-2">Senior engineer with 8+ years building scalable systems. Led teams of 5-10 at Google & Meta, shipping products used by millions.</div>
+            <div className="font-bold text-[6px] mb-0.5 mt-2" style={{ color: template.color }}>EXPERIENCE</div>
+            {[['Senior Engineer', 'Google', '2022 — Present'], ['Software Engineer', 'Meta', '2019 — 2022'], ['Junior Dev', 'Stripe', '2017 — 2019']].map(([r, c, p], i) => (
+              <div key={i} className="mb-1.5">
+                <div className="font-bold text-[5px] text-slate-900">{r}</div>
+                <div className="text-slate-500 text-[4px] italic">{c} · {p}</div>
+                <div className="text-slate-700 text-[4px] mt-0.5">• Built microservices serving 10M+ users</div>
+                <div className="text-slate-700 text-[4px]">• Reduced latency by 40%</div>
+              </div>
+            ))}
           </div>
         </div>
       )}
       {variant === 1 && (
-        <div className="p-4 h-full">
-          <div className="text-center mb-3 pb-2 border-b-2" style={{ borderColor: template.color }}>
-            <div className="h-2.5 bg-slate-900 rounded mb-1.5 w-1/2 mx-auto"></div>
-            <div className="h-1 bg-slate-400 rounded w-1/3 mx-auto"></div>
+        <div className="p-3 h-full text-[5px] leading-[1.3]">
+          <div className="text-center mb-2 pb-2 border-b-2" style={{ borderColor: template.color }}>
+            <div className="font-extrabold text-[8px] text-slate-900 tracking-wide">{name}</div>
+            <div className="font-bold text-[5px] mt-0.5" style={{ color: template.color }}>{role.toUpperCase()}</div>
+            <div className="text-slate-500 text-[4px] mt-0.5">email@mail.com · (555) 123-4567 · linkedin.com/in/you</div>
           </div>
-          <div className="space-y-2.5">
-            {[1,2,3].map(i => (
-              <div key={i}>
-                <div className="h-1.5 rounded w-1/4 mb-1" style={{ background: template.color }}></div>
-                <div className="h-0.5 bg-slate-300 rounded w-full mb-0.5"></div>
-                <div className="h-0.5 bg-slate-300 rounded w-11/12 mb-0.5"></div>
-                <div className="h-0.5 bg-slate-300 rounded w-4/5"></div>
+          <div className="mb-2">
+            <div className="font-bold text-[5px] mb-0.5" style={{ color: template.color }}>PROFESSIONAL SUMMARY</div>
+            <div className="text-slate-700 text-[4px] leading-[1.4]">Results-driven professional with 7+ years of expertise in strategic planning, team leadership, and cross-functional collaboration. Proven track record of delivering results.</div>
+          </div>
+          <div className="mb-2">
+            <div className="font-bold text-[5px] mb-0.5" style={{ color: template.color }}>EXPERIENCE</div>
+            {[['Senior Manager · Tech Corp', '2020 — Now'], ['Manager · StartupCo', '2017 — 2020']].map(([t, p], i) => (
+              <div key={i} className="mb-1">
+                <div className="flex justify-between">
+                  <div className="font-bold text-[5px] text-slate-900">{t}</div>
+                  <div className="text-[4px] text-slate-500">{p}</div>
+                </div>
+                <div className="text-slate-700 text-[4px] mt-0.5">• Led team of 12 engineers</div>
+                <div className="text-slate-700 text-[4px]">• Increased revenue by 35% YoY</div>
+                <div className="text-slate-700 text-[4px]">• Shipped 15+ product features</div>
               </div>
             ))}
+          </div>
+          <div>
+            <div className="font-bold text-[5px] mb-0.5" style={{ color: template.color }}>EDUCATION & SKILLS</div>
+            <div className="text-slate-700 text-[4px]">MBA · Harvard Business School (2017)</div>
+            <div className="text-slate-700 text-[4px] mt-0.5">Strategy · Leadership · Operations · Python · SQL</div>
           </div>
         </div>
       )}
       {variant === 2 && (
-        <div className="p-3 h-full">
-          <div className="h-8 rounded mb-3 flex items-center px-3" style={{ background: template.color }}>
-            <div className="h-1.5 w-1/3 bg-white/80 rounded"></div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1.5">
-              <div className="h-1.5 rounded w-3/4" style={{ background: template.color }}></div>
-              <div className="h-0.5 bg-slate-300 rounded w-full"></div>
-              <div className="h-0.5 bg-slate-300 rounded w-5/6"></div>
-              <div className="h-0.5 bg-slate-300 rounded w-4/6"></div>
-            </div>
-            <div className="space-y-1.5">
-              <div className="h-1.5 rounded w-3/4" style={{ background: template.color }}></div>
-              <div className="h-0.5 bg-slate-300 rounded w-full"></div>
-              <div className="h-0.5 bg-slate-300 rounded w-5/6"></div>
+        <div className="h-full text-[5px] leading-[1.3]">
+          <div className="h-10 px-3 py-2 flex items-center" style={{ background: template.color }}>
+            <div className="text-white">
+              <div className="font-extrabold text-[8px]">{name}</div>
+              <div className="text-[5px] text-white/80 mt-0.5">{role} · 6+ years experience</div>
             </div>
           </div>
-          <div className="mt-3 space-y-1">
-            <div className="h-0.5 bg-slate-300 rounded w-full"></div>
-            <div className="h-0.5 bg-slate-300 rounded w-11/12"></div>
-            <div className="h-0.5 bg-slate-300 rounded w-10/12"></div>
+          <div className="p-3">
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <div>
+                <div className="font-bold text-[5px] mb-0.5" style={{ color: template.color }}>CONTACT</div>
+                <div className="text-slate-700 text-[4px]">hello@email.com</div>
+                <div className="text-slate-700 text-[4px]">+1 (555) 123-4567</div>
+                <div className="text-slate-700 text-[4px]">Los Angeles, CA</div>
+              </div>
+              <div>
+                <div className="font-bold text-[5px] mb-0.5" style={{ color: template.color }}>SKILLS</div>
+                <div className="text-slate-700 text-[4px]">Figma · Sketch · Adobe XD</div>
+                <div className="text-slate-700 text-[4px]">User Research · Wireframing</div>
+                <div className="text-slate-700 text-[4px]">HTML/CSS · Prototyping</div>
+              </div>
+            </div>
+            <div className="font-bold text-[5px] mb-0.5" style={{ color: template.color }}>EXPERIENCE</div>
+            {[['Lead Designer · Airbnb', '2021 — Present'], ['Senior Designer · Uber', '2018 — 2021'], ['Product Designer · Spotify', '2016 — 2018']].map(([t, p], i) => (
+              <div key={i} className="mb-1">
+                <div className="flex justify-between">
+                  <div className="font-bold text-[5px] text-slate-900">{t}</div>
+                  <div className="text-[4px] text-slate-500">{p}</div>
+                </div>
+                <div className="text-slate-700 text-[4px] mt-0.5">• Redesigned checkout → +22% conversion</div>
+                <div className="text-slate-700 text-[4px]">• Built design system for 50+ products</div>
+              </div>
+            ))}
           </div>
         </div>
       )}
       {variant === 3 && (
-        <div className="p-4 h-full">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-10 h-10 rounded-full" style={{ background: template.color }}></div>
+        <div className="p-3 h-full text-[5px] leading-[1.3]">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[6px] font-extrabold" style={{ background: template.color }}>{name.charAt(0)}</div>
             <div className="flex-1">
-              <div className="h-2 bg-slate-900 rounded w-2/3 mb-1"></div>
-              <div className="h-1 bg-slate-400 rounded w-1/2"></div>
+              <div className="font-extrabold text-[7px] text-slate-900">{name}</div>
+              <div className="font-bold text-[5px]" style={{ color: template.color }}>{role}</div>
+              <div className="text-slate-500 text-[4px]">email@mail.com · +1 555-1234 · github.com/user</div>
             </div>
           </div>
-          <div className="space-y-2.5">
-            {[1,2,3].map(i => (
-              <div key={i} className="pl-3 border-l-2" style={{ borderColor: template.color }}>
-                <div className="h-1.5 bg-slate-700 rounded w-1/2 mb-1"></div>
-                <div className="h-0.5 bg-slate-300 rounded w-full mb-0.5"></div>
-                <div className="h-0.5 bg-slate-300 rounded w-4/5"></div>
+          <div className="mb-2">
+            <div className="font-bold text-[5px] mb-0.5" style={{ color: template.color }}>EXPERIENCE</div>
+            {[['Senior Data Scientist · Netflix', '2022 — Now'], ['Data Scientist · Airbnb', '2019 — 2022'], ['ML Engineer · Lyft', '2017 — 2019']].map(([t, p], i) => (
+              <div key={i} className="mb-1 pl-2 border-l-2" style={{ borderColor: template.color }}>
+                <div className="font-bold text-[5px] text-slate-900">{t}</div>
+                <div className="text-slate-500 text-[4px] italic">{p}</div>
+                <div className="text-slate-700 text-[4px] mt-0.5">• Built recommendation models</div>
+                <div className="text-slate-700 text-[4px]">• Scaled pipeline to 1B+ events/day</div>
               </div>
             ))}
+          </div>
+          <div className="grid grid-cols-2 gap-1.5 mt-2 pt-2 border-t border-slate-100">
+            <div>
+              <div className="font-bold text-[5px] mb-0.5" style={{ color: template.color }}>EDUCATION</div>
+              <div className="text-[4px] text-slate-700">MS Computer Science<br/>MIT, 2017</div>
+            </div>
+            <div>
+              <div className="font-bold text-[5px] mb-0.5" style={{ color: template.color }}>SKILLS</div>
+              <div className="text-[4px] text-slate-700">Python · PyTorch · TensorFlow · SQL · Spark</div>
+            </div>
           </div>
         </div>
       )}

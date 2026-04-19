@@ -4,6 +4,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide Emergent branding badge */
+#emergent-badge,
+[id*="emergent-badge"],
+a[href*="emergent.sh"][class*="fixed"],
+a[href*="emergentagent"][class*="fixed"],
+a[aria-label*="Emergent"],
+a[aria-label*="Made with Emergent"],
+a[title*="Made with Emergent"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+
 body {
     margin: 0;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
