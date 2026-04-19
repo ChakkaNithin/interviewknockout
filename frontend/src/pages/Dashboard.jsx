@@ -1,14 +1,31 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
-import { mockResumes, mockTemplates } from '../mock';
-import { Plus, FileText, Target, Briefcase, Search, Sparkles, TrendingUp, Clock, Download, Copy, Trash2, MoreVertical, Zap, Award, Check } from 'lucide-react';
+import { resumeApi } from '../lib/api';
+import { mockTemplates } from '../mock';
+import { Plus, FileText, Target, Briefcase, Search, Sparkles, TrendingUp, Clock, Download, Copy, Trash2, MoreVertical, Zap, Award, Check, Loader2 } from 'lucide-react';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const [resumes, setResumes] = useState(mockResumes);
+  const navigate = useNavigate();
+  const [resumes, setResumes] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('resumes');
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await resumeApi.list();
+        setResumes(data);
+      } catch (e) {
+        console.error('Failed to load resumes', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   const tools = [
     { name: 'ATS Checker', path: '/ats-checker', icon: Target, color: '#0D6B4F', bg: '#E8F5F0', desc: 'Score your resume against ATS systems' },
@@ -17,14 +34,44 @@ const Dashboard = () => {
     { name: 'AI Builder', path: '/builder', icon: Sparkles, color: '#7C3AED', bg: '#F3E8FF', desc: 'Build resume with AI assistance' },
   ];
 
-  const deleteResume = (id) => {
-    setResumes(resumes.filter(r => r.id !== id));
+  const deleteResume = async (id) => {
+    if (!window.confirm('Delete this resume?')) return;
+    try {
+      await resumeApi.delete(id);
+      setResumes(resumes.filter(r => r.id !== id));
+    } catch (e) {
+      alert('Failed to delete');
+    }
   };
 
-  const duplicateResume = (id) => {
+  const duplicateResume = async (id) => {
     const original = resumes.find(r => r.id === id);
     if (!original) return;
-    setResumes([...resumes, { ...original, id: 'r_' + Date.now(), title: original.title + ' (Copy)', lastEdited: 'just now' }]);
+    try {
+      const copy = await resumeApi.create({
+        title: original.title + ' (Copy)',
+        template: original.template,
+        target_role: original.target_role || '',
+        data: original.data,
+      });
+      setResumes([copy, ...resumes]);
+    } catch (e) {
+      alert('Failed to duplicate');
+    }
+  };
+
+  const createNew = async () => {
+    try {
+      const r = await resumeApi.create({
+        title: 'Untitled Resume',
+        template: 'double-column',
+        target_role: '',
+        data: {},
+      });
+      navigate('/builder');
+    } catch (e) {
+      navigate('/builder');
+    }
   };
 
   return (
@@ -48,7 +95,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
             { label: 'Resumes', value: resumes.length, icon: FileText, color: '#0F3D2E', bg: '#E8F5F0' },
-            { label: 'Avg ATS Score', value: Math.round(resumes.reduce((a,r) => a+r.score,0)/Math.max(resumes.length,1)), icon: Target, color: '#FF6B47', bg: '#FFF3EE', suffix: '%' },
+            { label: 'Avg ATS Score', value: resumes.length ? Math.round(resumes.reduce((a,r) => a+(r.ats_score||0),0)/resumes.length) : 0, icon: Target, color: '#FF6B47', bg: '#FFF3EE', suffix: '%' },
             { label: 'Applications', value: 23, icon: Briefcase, color: '#4F8EF7', bg: '#EFF6FF' },
             { label: 'Interviews', value: 4, icon: Award, color: '#7C3AED', bg: '#F3E8FF' },
           ].map(s => (
@@ -104,7 +151,9 @@ const Dashboard = () => {
                 </Link>
                 {resumes.map(r => {
                   const tpl = mockTemplates.find(t => t.id === r.template) || mockTemplates[0];
-                  const scoreColor = r.score >= 80 ? '#0D6B4F' : r.score >= 60 ? '#4F8EF7' : '#F59E0B';
+                  const score = r.ats_score || 0;
+                  const scoreColor = score >= 80 ? '#0D6B4F' : score >= 60 ? '#4F8EF7' : '#F59E0B';
+                  const lastEdited = r.updated_at ? new Date(r.updated_at).toLocaleDateString() : 'just now';
                   return (
                     <div key={r.id} className="bg-white rounded-2xl border border-slate-100 hover:shadow-lg hover:-translate-y-0.5 transition-all overflow-hidden">
                       <div className="relative h-48 bg-slate-50 overflow-hidden flex items-center justify-center">
@@ -115,14 +164,16 @@ const Dashboard = () => {
                           <div className="mt-2 h-1 rounded w-1/3" style={{ background: tpl.color }}></div>
                           <div className="space-y-0.5 mt-1">{[1,2,3].map(i => <div key={i} className="h-0.5 bg-slate-200 rounded" style={{width: `${85 - i*5}%`}}></div>)}</div>
                         </div>
-                        <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-full bg-white shadow">
-                          <div className="w-2 h-2 rounded-full" style={{ background: scoreColor }}></div>
-                          <span className="text-xs font-bold" style={{ color: scoreColor }}>{r.score}</span>
-                        </div>
+                        {score > 0 && (
+                          <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-full bg-white shadow">
+                            <div className="w-2 h-2 rounded-full" style={{ background: scoreColor }}></div>
+                            <span className="text-xs font-bold" style={{ color: scoreColor }}>{score}</span>
+                          </div>
+                        )}
                       </div>
                       <div className="p-4">
                         <div className="font-bold text-slate-900 mb-1 truncate">{r.title}</div>
-                        <div className="text-xs text-slate-500 mb-3 flex items-center gap-1"><Clock className="w-3 h-3" /> {r.lastEdited} · {r.targetRole}</div>
+                        <div className="text-xs text-slate-500 mb-3 flex items-center gap-1"><Clock className="w-3 h-3" /> {lastEdited}{r.target_role ? ` · ${r.target_role}` : ''}</div>
                         <div className="flex items-center gap-2">
                           <Link to="/builder" className="flex-1 text-center py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-colors">Edit</Link>
                           <button onClick={() => duplicateResume(r.id)} className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600" title="Duplicate"><Copy className="w-4 h-4" /></button>

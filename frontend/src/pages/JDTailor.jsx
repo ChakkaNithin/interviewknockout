@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
-import { mockJDTailorResult, mockSampleJD } from '../mock';
-import { FileText, Target, Briefcase, Sparkles, ArrowRight, Check, Download, RotateCw, X, Edit3, Zap } from 'lucide-react';
+import { mockSampleJD } from '../mock';
+import { jdApi } from '../lib/api';
+import { FileText, Target, Briefcase, Sparkles, ArrowRight, Check, Download, RotateCw, X, Edit3, Zap, Upload } from 'lucide-react';
 
 function MatchRing({ score, size = 100 }) {
   const r = size / 2 - 6;
@@ -30,17 +31,44 @@ const JDTailor = () => {
   const [tailoring, setTailoring] = useState(false);
   const [tailored, setTailored] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
+  const [resumeFile, setResumeFile] = useState(null);
+  const [data, setData] = useState(null);
+  const [error, setError] = useState('');
 
-  const data = mockJDTailorResult;
-
-  const handleTailor = () => {
+  const handleTailor = async () => {
     if (jd.trim().length < 50) return;
+    if (!resumeFile) {
+      setError('Please upload your resume first');
+      return;
+    }
     setTailoring(true);
-    setTimeout(() => { setTailoring(false); setTailored(true); setActiveTab(0); }, 2400);
+    setError('');
+    try {
+      const result = await jdApi.tailorFile(resumeFile, jd);
+      // Normalize
+      const normalized = {
+        matchScore: result.match_score || result.matchScore || 0,
+        keywordsAdded: result.keywords_added || result.keywordsAdded || [],
+        keywordsPresent: result.keywords_present || result.keywordsPresent || [],
+        sectionsUpdated: result.sections_updated || result.sectionsUpdated || [],
+        unchangedSections: result.unchanged_sections || result.unchangedSections || [],
+        tailoredSummary: result.tailored_summary || '',
+        tailoredSkills: result.tailored_skills || [],
+        jobTitle: result.job_title || 'Job Title',
+        company: result.company || '',
+      };
+      setData(normalized);
+      setTailored(true);
+      setActiveTab(0);
+    } catch (e) {
+      setError(e.response?.data?.detail || 'Tailoring failed. Try again.');
+    } finally {
+      setTailoring(false);
+    }
   };
 
   const loadSample = () => setJd(mockSampleJD);
-  const reset = () => { setTailored(false); setJd(''); };
+  const reset = () => { setTailored(false); setJd(''); setData(null); setError(''); };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -56,17 +84,25 @@ const JDTailor = () => {
             </h1>
             <p className="text-slate-600 mb-6">AI aligns your ATS resume to the exact JD — keywords, skills, tone, and priorities matched automatically.</p>
 
-            {/* Resume Loaded Card */}
-            <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-4 flex items-center gap-3">
-              <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#0F3D2E] to-[#1F6B4F] text-white flex items-center justify-center font-extrabold">N</div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-[#0D6B4F]" strokeWidth={3} />
-                  <span className="font-bold text-slate-900 text-sm">ATS Resume Loaded</span>
-                </div>
-                <div className="text-xs text-slate-500 truncate">Nithin_ATS_Optimized.docx · Score: 88/100</div>
+            {/* Resume Upload */}
+            <input id="resumeFileInput" type="file" accept=".pdf,.docx,.doc,.txt" hidden onChange={(e) => e.target.files[0] && setResumeFile(e.target.files[0])} />
+            <div onClick={() => !tailored && document.getElementById('resumeFileInput').click()} className={`bg-white rounded-2xl border-2 ${resumeFile ? 'border-[#0D6B4F]' : 'border-dashed border-slate-200 hover:border-[#FF6B47]'} p-4 mb-4 flex items-center gap-3 cursor-pointer transition-colors`}>
+              <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-extrabold ${resumeFile ? 'bg-[#0D6B4F]' : 'bg-slate-300'}`}>
+                {resumeFile ? <Check className="w-5 h-5" strokeWidth={3} /> : <Upload className="w-5 h-5" />}
               </div>
-              <div className="px-2 py-1 rounded-full bg-[#E8F5F0] text-[#0D6B4F] text-[10px] font-bold">Phase 1 ✓</div>
+              <div className="flex-1 min-w-0">
+                {resumeFile ? (
+                  <>
+                    <div className="font-bold text-slate-900 text-sm truncate">{resumeFile.name}</div>
+                    <div className="text-xs text-slate-500">Ready to tailor</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="font-bold text-slate-700 text-sm">Upload Your Resume</div>
+                    <div className="text-xs text-slate-500">.pdf, .docx or .txt</div>
+                  </>
+                )}
+              </div>
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-100 p-4">
@@ -95,7 +131,7 @@ const JDTailor = () => {
 
             <div className="mt-4">
               {!tailored ? (
-                <button disabled={jd.length < 50 || tailoring} onClick={handleTailor} className="w-full py-3 rounded-xl bg-[#FF6B47] hover:bg-[#ff5630] disabled:bg-slate-200 disabled:text-slate-500 text-white font-bold transition-all flex items-center justify-center gap-2">
+                <button disabled={jd.length < 50 || !resumeFile || tailoring} onClick={handleTailor} className="w-full py-3 rounded-xl bg-[#FF6B47] hover:bg-[#ff5630] disabled:bg-slate-200 disabled:text-slate-500 text-white font-bold transition-all flex items-center justify-center gap-2">
                   {tailoring ? 'Tailoring your resume...' : (<><Sparkles className="w-4 h-4" /> Tailor Resume Now</>)}
                 </button>
               ) : (
@@ -103,17 +139,24 @@ const JDTailor = () => {
                   <RotateCw className="w-4 h-4" /> Try Different JD
                 </button>
               )}
+              {error && <div className="mt-2 p-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-xs">{error}</div>}
+              {tailoring && (
+                <div className="mt-2 p-3 bg-white rounded-xl border border-slate-100 text-xs text-slate-500 flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-slate-200 border-t-[#FF6B47] rounded-full animate-spin"></div>
+                  Claude Sonnet 4.5 is tailoring your resume to this JD...
+                </div>
+              )}
             </div>
           </div>
 
           {/* RIGHT */}
-          {tailored ? (
+          {tailored && data ? (
             <div className="bg-white rounded-2xl border border-slate-100 p-6">
               <div className="flex items-center justify-between pb-5 border-b border-slate-100 mb-5">
                 <div>
                   <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tailored For</div>
-                  <div className="font-bold text-slate-900 mt-0.5">Senior Generative AI Engineer</div>
-                  <div className="text-xs text-slate-500">Pfizer Digital · Healthcare AI</div>
+                  <div className="font-bold text-slate-900 mt-0.5">{data.jobTitle}</div>
+                  <div className="text-xs text-slate-500">{data.company || 'Matched to your job description'}</div>
                 </div>
                 <MatchRing score={data.matchScore} />
               </div>
@@ -125,12 +168,12 @@ const JDTailor = () => {
 
               {activeTab === 0 && (
                 <div>
-                  <div className="p-4 rounded-xl bg-[#E8F5F0] border border-[#BBE8D8] mb-5">
+                  <div className={`p-4 rounded-xl border mb-5 ${data.matchScore >= 85 ? 'bg-[#E8F5F0] border-[#BBE8D8]' : 'bg-blue-50 border-blue-100'}`}>
                     <div className="flex items-start gap-2">
-                      <Check className="w-5 h-5 text-[#0D6B4F] flex-shrink-0 mt-0.5" strokeWidth={3} />
+                      <Check className={`w-5 h-5 flex-shrink-0 mt-0.5 ${data.matchScore >= 85 ? 'text-[#0D6B4F]' : 'text-blue-600'}`} strokeWidth={3} />
                       <div>
-                        <div className="font-bold text-[#0D6B4F] text-sm mb-1">Excellent Match — 94% alignment</div>
-                        <div className="text-xs text-slate-700">Your resume is strongly aligned with this JD. All critical keywords, skills, and responsibilities have been addressed.</div>
+                        <div className={`font-bold text-sm mb-1 ${data.matchScore >= 85 ? 'text-[#0D6B4F]' : 'text-blue-900'}`}>{data.matchScore >= 85 ? 'Excellent Match' : data.matchScore >= 65 ? 'Good Match' : 'Partial Match'} — {data.matchScore}% alignment</div>
+                        <div className="text-xs text-slate-700">Your resume has been aligned with this JD. {data.keywordsAdded.length} new keywords added, {data.sectionsUpdated.length} sections updated.</div>
                       </div>
                     </div>
                   </div>
@@ -181,32 +224,23 @@ const JDTailor = () => {
               {activeTab === 2 && (
                 <div>
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 mb-4">
-                    <div className="text-xs font-bold text-slate-600 uppercase mb-3">Resume Preview</div>
+                    <div className="text-xs font-bold text-slate-600 uppercase mb-3">Tailored Resume Preview</div>
                     <div className="bg-white rounded-lg shadow-sm p-5 text-xs leading-relaxed">
                       <div className="border-b-2 border-[#0F3D2E] pb-2 mb-3">
-                        <div className="text-lg font-extrabold text-slate-900">Nithin Chakka</div>
-                        <div className="text-[#0F3D2E] font-bold">Senior Generative AI Engineer · Healthcare AI</div>
-                        <div className="text-slate-500 mt-1">nithin@example.com · Bangalore, India · linkedin.com/in/nithin · github.com/nithin</div>
+                        <div className="text-lg font-extrabold text-slate-900">Your Name</div>
+                        <div className="text-[#0F3D2E] font-bold">{data.jobTitle}{data.company ? ` · ${data.company}` : ''}</div>
                       </div>
                       <div className="mb-3">
                         <div className="font-bold text-[#0F3D2E] mb-1">PROFESSIONAL SUMMARY</div>
-                        <p className="text-slate-700">Senior AI Engineer with 4+ years building production-grade LLM and multi-agent systems for healthcare AI and clinical document automation. Deep expertise in RAG, Vector Databases, LangGraph, AWS Bedrock, and Azure OpenAI. Strong knowledge of CDISC standards, eCRF/eCOA workflows, and regulatory compliance for pharma clients.</p>
+                        <p className="text-slate-700">{data.tailoredSummary || 'Summary will appear after tailoring.'}</p>
                       </div>
                       <div className="mb-3">
                         <div className="font-bold text-[#0F3D2E] mb-1">KEY SKILLS</div>
-                        <p className="text-slate-700">Python · LangGraph · LangChain · RAG · Vector Databases (Pinecone, Chroma) · AWS Bedrock · Azure OpenAI · FastAPI · Neo4j · Multi-agent systems · Docker · CI/CD · CDISC · eCRF · eCOA</p>
+                        <p className="text-slate-700">{(data.tailoredSkills || []).join(' · ')}</p>
                       </div>
                       <div>
-                        <div className="font-bold text-[#0F3D2E] mb-1">EXPERIENCE</div>
-                        <div className="mb-2">
-                          <div className="font-bold text-slate-900">GenAI Developer · TechCorp</div>
-                          <div className="text-slate-500 italic">2022 — Present</div>
-                          <ul className="list-disc list-inside mt-1 space-y-0.5 text-slate-700">
-                            <li>Built eCOA AI pipeline processing 500+ clinical documents/batch with CDISC compliance</li>
-                            <li>Reduced manual localization effort by 70% via automated 3-stage QC with LangGraph</li>
-                            <li>Implemented RAG-based eCRF parser for Medidata Rave integration — 94% accuracy</li>
-                          </ul>
-                        </div>
+                        <div className="font-bold text-[#0F3D2E] mb-1">KEYWORDS ADDED</div>
+                        <p className="text-slate-700">{(data.keywordsAdded || []).join(', ')}</p>
                       </div>
                     </div>
                   </div>
@@ -222,7 +256,7 @@ const JDTailor = () => {
                     <Check className="w-9 h-9 text-[#0D6B4F]" strokeWidth={3} />
                   </div>
                   <h3 className="text-xl font-extrabold text-slate-900 mb-2">Tailored Resume Ready!</h3>
-                  <p className="text-sm text-slate-600 mb-5">Your resume is tailored for Senior Generative AI Engineer at Pfizer Digital. Match score: {data.matchScore}%</p>
+                  <p className="text-sm text-slate-600 mb-5">Your resume is tailored for {data.jobTitle}. Match score: {data.matchScore}%</p>
                   <div className="space-y-2 mb-5">
                     <button className="w-full py-3 rounded-xl bg-[#FF6B47] hover:bg-[#ff5630] text-white font-bold flex items-center justify-center gap-2">
                       <Download className="w-4 h-4" /> Download Tailored Resume (.docx)

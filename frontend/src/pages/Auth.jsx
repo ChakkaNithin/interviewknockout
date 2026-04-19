@@ -15,7 +15,7 @@ const Auth = ({ mode = 'login' }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     if (!form.email || !form.password || (!isLogin && !form.name)) {
@@ -27,21 +27,28 @@ const Auth = ({ mode = 'login' }) => {
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      if (isLogin) login(form.email, form.password);
-      else signup(form.name, form.email, form.password);
-      setLoading(false);
+    try {
+      if (isLogin) await login(form.email, form.password);
+      else await signup(form.name, form.email, form.password);
       navigate(from);
-    }, 600);
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleGoogle = () => {
+  const handleGoogle = async () => {
     setLoading(true);
-    setTimeout(() => {
-      loginWithGoogle();
-      setLoading(false);
+    setError('');
+    try {
+      await loginWithGoogle();
       navigate(from);
-    }, 600);
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message || 'Google login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const benefits = [
@@ -61,14 +68,14 @@ const Auth = ({ mode = 'login' }) => {
           <div className="w-10 h-10 rounded-xl bg-[#FF6B47] flex items-center justify-center">
             <FileText className="w-5 h-5 text-white" strokeWidth={2.5} />
           </div>
-          <span className="text-xl font-bold">ResumeFlow</span>
+          <span className="text-xl font-bold">Covera.ai</span>
         </Link>
         <div className="relative">
           <h1 className="text-4xl font-extrabold text-white leading-tight mb-4">
             Build a resume that lands interviews in minutes.
           </h1>
           <p className="text-white/80 mb-8">
-            Join 15M+ job seekers who've used ResumeFlow to craft standout resumes and land their dream roles.
+            Join 15M+ job seekers who've used Covera.ai to craft standout resumes and land their dream roles.
           </p>
           <ul className="space-y-3">
             {benefits.map(b => (
@@ -99,7 +106,7 @@ const Auth = ({ mode = 'login' }) => {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0F3D2E] to-[#1F6B4F] flex items-center justify-center">
                 <FileText className="w-5 h-5 text-white" strokeWidth={2.5} />
               </div>
-              <span className="text-xl font-bold text-slate-900">ResumeFlow</span>
+              <span className="text-xl font-bold text-slate-900">Covera.ai</span>
             </Link>
           </div>
           <h2 className="text-3xl font-extrabold text-slate-900 mb-2">

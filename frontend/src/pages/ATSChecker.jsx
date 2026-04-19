@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
-import { mockATSResult } from '../mock';
+import { atsApi } from '../lib/api';
 import { Upload, FileText, CheckCircle2, XCircle, AlertTriangle, Sparkles, Download, RotateCw, ArrowRight, Target, Zap, TrendingUp, Check, X } from 'lucide-react';
 
 function CircleScore({ score, size = 120 }) {
@@ -27,23 +27,43 @@ const tabs = ['Score', 'Pros & Cons', 'Fixes', 'Download'];
 
 const ATSChecker = () => {
   const [file, setFile] = useState(null);
+  const [fileObj, setFileObj] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [data, setData] = useState(null);
+  const [error, setError] = useState('');
+  const [targetRole, setTargetRole] = useState('');
 
-  const data = mockATSResult;
+  const handleFileSelect = (f) => {
+    if (!f) return;
+    setFileObj(f);
+    setFile(f.name);
+    setError('');
+  };
 
-  const handleAnalyze = () => {
-    if (!file) return;
+  const handleAnalyze = async () => {
+    if (!fileObj) return;
     setAnalyzing(true);
-    setTimeout(() => {
-      setAnalyzing(false);
+    setError('');
+    try {
+      const result = await atsApi.analyzeFile(fileObj, targetRole);
+      // Normalize keys (snake_case from backend)
+      const normalized = {
+        ...result,
+        missingKeywords: result.missing_keywords || result.missingKeywords || [],
+      };
+      setData(normalized);
       setAnalyzed(true);
       setActiveTab(0);
-    }, 2200);
+    } catch (e) {
+      setError(e.response?.data?.detail || 'Analysis failed. Please try a different file.');
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const handleGenerate = () => {
@@ -59,12 +79,15 @@ const ATSChecker = () => {
     setAnalyzed(false);
     setGenerated(false);
     setFile(null);
+    setFileObj(null);
+    setData(null);
+    setError('');
   };
 
   const priorityColor = (p) => p === 'HIGH' ? { bg: '#FEF2F2', text: '#EF4444', border: '#FECACA' } : p === 'MEDIUM' ? { bg: '#FFFBEB', text: '#F59E0B', border: '#FDE68A' } : { bg: '#F8FAFC', text: '#64748B', border: '#E2E8F0' };
-  const highCount = data.fixes.filter(f => f.priority === 'HIGH').length;
-  const medCount = data.fixes.filter(f => f.priority === 'MEDIUM').length;
-  const lowCount = data.fixes.filter(f => f.priority === 'LOW').length;
+  const highCount = (data?.fixes || []).filter(f => f.priority === 'HIGH').length;
+  const medCount = (data?.fixes || []).filter(f => f.priority === 'MEDIUM').length;
+  const lowCount = (data?.fixes || []).filter(f => f.priority === 'LOW').length;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -89,12 +112,12 @@ const ATSChecker = () => {
                 e.preventDefault();
                 setDragging(false);
                 const f = e.dataTransfer.files[0];
-                if (f) setFile(f.name);
+                if (f) handleFileSelect(f);
               }}
               onClick={() => !analyzed && document.getElementById('fileInput').click()}
               className={`rounded-2xl border-2 border-dashed p-7 text-center cursor-pointer transition-all ${dragging ? 'border-[#FF6B47] bg-[#FFF3EE]' : file ? 'border-[#0D6B4F] bg-[#E8F5F0]' : 'border-slate-200 bg-white hover:border-slate-300'}`}
             >
-              <input id="fileInput" type="file" accept=".pdf,.docx,.doc" hidden onChange={(e) => e.target.files[0] && setFile(e.target.files[0].name)} />
+              <input id="fileInput" type="file" accept=".pdf,.docx,.doc,.txt" hidden onChange={(e) => handleFileSelect(e.target.files[0])} />
               <div className={`w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center ${file ? 'bg-[#0D6B4F]' : 'bg-slate-100'}`}>
                 {file ? <CheckCircle2 className="w-7 h-7 text-white" /> : <Upload className="w-6 h-6 text-slate-500" />}
               </div>
@@ -113,20 +136,30 @@ const ATSChecker = () => {
 
             <div className="mt-4">
               {!analyzed ? (
-                <button disabled={!file || analyzing} onClick={handleAnalyze} className="w-full py-3 rounded-xl bg-[#FF6B47] hover:bg-[#ff5630] disabled:bg-slate-200 disabled:text-slate-500 text-white font-bold transition-all">
-                  {analyzing ? 'Analyzing...' : 'Analyze My Resume →'}
-                </button>
+                <>
+                  <input
+                    type="text"
+                    value={targetRole}
+                    onChange={(e) => setTargetRole(e.target.value)}
+                    placeholder="Target role (optional) — e.g. Senior AI Engineer"
+                    className="w-full px-4 py-2.5 mb-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#FF6B47] focus:ring-2 focus:ring-[#FF6B47]/10"
+                  />
+                  <button disabled={!fileObj || analyzing} onClick={handleAnalyze} className="w-full py-3 rounded-xl bg-[#FF6B47] hover:bg-[#ff5630] disabled:bg-slate-200 disabled:text-slate-500 text-white font-bold transition-all">
+                    {analyzing ? 'Analyzing...' : 'Analyze My Resume →'}
+                  </button>
+                </>
               ) : (
                 <button onClick={reset} className="w-full py-3 rounded-xl bg-white border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-colors flex items-center justify-center gap-2">
                   <RotateCw className="w-4 h-4" /> Analyze Different Resume
                 </button>
               )}
+              {error && <div className="mt-2 p-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-xs">{error}</div>}
             </div>
 
             {analyzing && (
               <div className="mt-4 p-3 bg-white rounded-xl border border-slate-100 text-xs text-slate-500 flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-slate-200 border-t-[#FF6B47] rounded-full animate-spin"></div>
-                Scanning structure, keywords & ATS compatibility...
+                Claude Sonnet 4.5 is analyzing your resume...
               </div>
             )}
 
@@ -141,14 +174,16 @@ const ATSChecker = () => {
           </div>
 
           {/* RIGHT */}
-          {analyzed ? (
+          {analyzed && data ? (
             <div className="bg-white rounded-2xl border border-slate-100 p-6 animate-[fadeIn_0.4s_ease]">
               <div className="flex items-center justify-between pb-5 border-b border-slate-100 mb-5">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#0F3D2E] to-[#1F6B4F] text-white flex items-center justify-center font-extrabold">N</div>
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#0F3D2E] to-[#1F6B4F] text-white flex items-center justify-center font-extrabold">
+                    {(file || 'R').charAt(0).toUpperCase()}
+                  </div>
                   <div>
-                    <div className="font-bold text-slate-900">Nithin Chakka</div>
-                    <div className="text-xs text-slate-500">GenAI Developer</div>
+                    <div className="font-bold text-slate-900 truncate max-w-[220px]">{file || 'Your Resume'}</div>
+                    <div className="text-xs text-slate-500">{targetRole || 'Target role not specified'}</div>
                   </div>
                 </div>
                 <CircleScore score={data.score} size={100} />
@@ -165,12 +200,12 @@ const ATSChecker = () => {
 
               {activeTab === 0 && (
                 <div>
-                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 mb-5">
+                  <div className={`p-4 rounded-xl border mb-5 ${data.score >= 80 ? 'bg-[#E8F5F0] border-[#BBE8D8]' : data.score >= 60 ? 'bg-blue-50 border-blue-100' : 'bg-amber-50 border-amber-200'}`}>
                     <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <AlertTriangle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${data.score >= 80 ? 'text-[#0D6B4F]' : data.score >= 60 ? 'text-blue-600' : 'text-amber-600'}`} />
                       <div>
-                        <div className="font-bold text-amber-900 text-sm mb-1">Needs Improvement</div>
-                        <div className="text-xs text-amber-800">Strong technical content but critical ATS issues found — table-based layout, zero quantifiable metrics, and missing contact fields are hurting your score significantly.</div>
+                        <div className={`font-bold text-sm mb-1 ${data.score >= 80 ? 'text-[#0D6B4F]' : data.score >= 60 ? 'text-blue-900' : 'text-amber-900'}`}>{data.verdict || (data.score >= 80 ? 'Excellent' : data.score >= 60 ? 'Good' : 'Needs Improvement')}</div>
+                        <div className="text-xs text-slate-700">{(data.cons && data.cons[0]) || 'Review your resume for optimization opportunities.'}</div>
                       </div>
                     </div>
                   </div>
@@ -196,7 +231,7 @@ const ATSChecker = () => {
                     <div className="p-4 rounded-xl bg-red-50 border border-red-100">
                       <div className="text-xs font-bold text-red-600 mb-2">❌ MISSING HIGH-VALUE KEYWORDS</div>
                       <div className="flex flex-wrap gap-1.5">
-                        {data.missingKeywords.map(k => <span key={k} className="px-2 py-1 rounded-md bg-white text-red-600 text-xs font-semibold border border-red-100">{k}</span>)}
+                        {(data.missingKeywords || data.missing_keywords || []).map(k => <span key={k} className="px-2 py-1 rounded-md bg-white text-red-600 text-xs font-semibold border border-red-100">{k}</span>)}
                       </div>
                     </div>
                   </div>
@@ -261,7 +296,7 @@ const ATSChecker = () => {
                   <div className="p-5 rounded-2xl bg-gradient-to-br from-[#0F3D2E] to-[#14543F] text-white mb-4">
                     <div className="text-xs font-bold text-[#FF6B47] mb-1">🤖 AI will auto-apply all fixes</div>
                     <div className="text-xs text-white/80">Projected score after improvements</div>
-                    <div className="text-3xl font-extrabold mt-1">{data.score} → 88+</div>
+                    <div className="text-3xl font-extrabold mt-1">{data.score} → {Math.min(100, data.score + 20)}+</div>
                   </div>
                   <button onClick={handleGenerate} disabled={generating} className="w-full py-3 rounded-xl bg-[#FF6B47] hover:bg-[#ff5630] disabled:opacity-60 text-white font-bold flex items-center justify-center gap-2">
                     {generating ? 'Generating improved resume...' : (<><Sparkles className="w-4 h-4" /> Generate ATS-Improved Resume</>)}

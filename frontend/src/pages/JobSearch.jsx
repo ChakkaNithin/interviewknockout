@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { mockJobs } from '../mock';
-import { MapPin, Briefcase, Clock, DollarSign, TrendingUp, Home, Star, Download, ArrowRight, LayoutGrid, List, Search, Check } from 'lucide-react';
+import { jobsApi } from '../lib/api';
+import { MapPin, Briefcase, Clock, DollarSign, TrendingUp, Home, Star, Download, ArrowRight, LayoutGrid, List, Search, Check, Loader2 } from 'lucide-react';
 
 const siteCfg = {
   linkedin: { color: '#0A66C2', label: 'LinkedIn', short: 'in', bg: '#E8F0FB' },
@@ -42,20 +43,57 @@ const JobSearch = () => {
   const [viewMode, setViewMode] = useState('cards');
   const [savedJobs, setSavedJobs] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [jobs, setJobs] = useState(mockJobs);
+  const [isDemoData, setIsDemoData] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('AI Engineer');
+  const [location, setLocation] = useState('India');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const runSearch = async (term, loc) => {
+    if (!term.trim()) return;
+    setLoading(true);
+    setError('');
+    try {
+      const resp = await jobsApi.search({
+        search_term: term,
+        location: loc,
+        sites: ['linkedin', 'indeed', 'naukri', 'google'],
+        hours_old: 168,
+        results_per_site: 10,
+        use_serpapi: true,
+        resume_skills: [],
+      });
+      if (resp.jobs && resp.jobs.length > 0) {
+        setJobs(resp.jobs);
+        setIsDemoData(false);
+      } else {
+        setError('No jobs found. Showing demo results.');
+        setJobs(mockJobs);
+        setIsDemoData(true);
+      }
+    } catch (e) {
+      setError(e.response?.data?.detail || 'Search failed. Showing demo results.');
+      setJobs(mockJobs);
+      setIsDemoData(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const sites = ['all', 'linkedin', 'naukri', 'indeed', 'google'];
-  const filtered = mockJobs.filter(j => {
+  const filtered = jobs.filter(j => {
     const matchesSite = siteFilter === 'all' || j.site === siteFilter;
     const matchesSearch = !searchQuery || j.title.toLowerCase().includes(searchQuery.toLowerCase()) || j.company.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSite && matchesSearch;
   });
 
-  const counts = { all: mockJobs.length };
-  sites.forEach(s => { if (s !== 'all') counts[s] = mockJobs.filter(j => j.site === s).length; });
+  const counts = { all: jobs.length };
+  sites.forEach(s => { if (s !== 'all') counts[s] = jobs.filter(j => j.site === s).length; });
 
-  const excellent = mockJobs.filter(j => j.priority === 'EXCELLENT').length;
-  const good = mockJobs.filter(j => j.priority === 'GOOD').length;
-  const fair = mockJobs.filter(j => j.priority === 'FAIR').length;
+  const excellent = jobs.filter(j => j.priority === 'EXCELLENT').length;
+  const good = jobs.filter(j => j.priority === 'GOOD').length;
+  const fair = jobs.filter(j => j.priority === 'FAIR').length;
 
   const toggleSave = (id) => {
     const s = new Set(savedJobs);
@@ -68,13 +106,13 @@ const JobSearch = () => {
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F5F0] text-[#0D6B4F] text-xs font-bold uppercase tracking-wider mb-3">
-              <Check className="w-3.5 h-3.5" /> JobSpy — Free · No API Key
+              <Check className="w-3.5 h-3.5" /> JobSpy + SerpApi · Live Results
             </div>
-            <h1 className="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">Job Matches — Nithin Chakka</h1>
-            <p className="text-slate-600 mt-1">{mockJobs.length} jobs · AI Engineer · India · Last 7 days</p>
+            <h1 className="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">AI Job Matches</h1>
+            <p className="text-slate-600 mt-1">{jobs.length} jobs · {searchTerm} · {location}{isDemoData && ' · (demo data)'}</p>
           </div>
           <div className="flex items-center gap-2">
             <button className="px-4 py-2 rounded-lg bg-white border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5">
@@ -86,13 +124,34 @@ const JobSearch = () => {
           </div>
         </div>
 
+        {/* Live Search */}
+        <div className="bg-gradient-to-br from-[#0F3D2E] to-[#14543F] rounded-2xl p-5 mb-6 text-white">
+          <div className="flex flex-col lg:flex-row gap-3">
+            <div className="flex-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-white/70 mb-1">Job Title / Keyword</label>
+              <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="e.g. AI Engineer, Product Manager" className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:border-[#FF6B47]" />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-white/70 mb-1">Location</label>
+              <input value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. India, Bangalore" className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:border-[#FF6B47]" />
+            </div>
+            <div className="flex items-end">
+              <button onClick={() => runSearch(searchTerm, location)} disabled={loading || !searchTerm.trim()} className="w-full lg:w-auto px-6 py-2.5 rounded-lg bg-[#FF6B47] hover:bg-[#ff5630] disabled:opacity-60 text-white font-bold flex items-center justify-center gap-2">
+                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Searching...</> : <><Search className="w-4 h-4" /> Search Live Jobs</>}
+              </button>
+            </div>
+          </div>
+          {loading && <div className="mt-3 text-xs text-white/70">Scraping LinkedIn, Indeed, Naukri, and Google Jobs... (may take 30-60s)</div>}
+          {error && <div className="mt-3 text-xs text-[#FF6B47]">{error}</div>}
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {[
             [excellent, 'Excellent Match', '#0D6B4F', '#E8F5F0'],
             [good, 'Good Match', '#4F8EF7', '#EFF6FF'],
             [fair, 'Fair Match', '#F59E0B', '#FFFBEB'],
-            [mockJobs.length, 'Total Jobs', '#0F3D2E', '#F1F5F9'],
+            [jobs.length, 'Total Jobs', '#0F3D2E', '#F1F5F9'],
           ].map(([v, l, c, bg]) => (
             <div key={l} className="bg-white rounded-2xl p-4 border border-slate-100" style={{ borderLeftWidth: 4, borderLeftColor: c }}>
               <div className="text-3xl font-extrabold" style={{ color: c }}>{v}</div>

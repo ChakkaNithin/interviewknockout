@@ -58,7 +58,7 @@ export const mockTestimonials = [
   { name: 'Carla', role: 'Product Designer', rating: 4, text: 'The platform is great. Templates are beautiful and ATS-friendly. Still learning all the features.', avatar: 'https://images.pexels.com/photos/30004323/pexels-photo-30004323.jpeg?auto=compress&cs=tinysrgb&w=200', daysAgo: '1 day ago' },
   { name: 'Ricardo O.', role: 'Software Engineer', rating: 5, text: 'Pretty intuitive. Suggestions made sense. Formatting the CV which usually is a pain was super easy.', avatar: 'https://images.pexels.com/photos/14589344/pexels-photo-14589344.jpeg?auto=compress&cs=tinysrgb&w=200', daysAgo: '4 days ago' },
   { name: 'Julien', role: 'Data Analyst', rating: 5, text: 'Built a CV in 2 hours flat. I can adapt it to different templates, I love it! Highly recommend!', avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?crop=entropy&cs=srgb&fm=jpg&q=85&w=200', daysAgo: '2 days ago' },
-  { name: 'Sarah M.', role: 'Solutions Engineer', rating: 5, text: 'ResumeFlow changed my life: One week and four interviews later, I will be making 150% more.', avatar: 'https://images.pexels.com/photos/15640958/pexels-photo-15640958.jpeg?auto=compress&cs=tinysrgb&w=200', daysAgo: '3 days ago' },
+  { name: 'Sarah M.', role: 'Solutions Engineer', rating: 5, text: 'Covera.ai changed my life: One week and four interviews later, I will be making 150% more.', avatar: 'https://images.pexels.com/photos/15640958/pexels-photo-15640958.jpeg?auto=compress&cs=tinysrgb&w=200', daysAgo: '3 days ago' },
   { name: 'Priya K.', role: 'AI Engineer', rating: 5, text: 'The ATS checker caught issues I never would have seen. Got 3 interview calls in a week.', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?crop=entropy&cs=srgb&fm=jpg&q=85&w=200', daysAgo: '5 days ago' },
 ];
 
@@ -97,13 +97,13 @@ export const mockPricing = [
 ];
 
 export const mockFaqs = [
-  { q: 'Why use ResumeFlow for your job application?', a: 'ResumeFlow helps you build a resume that feels personal and gets remembered. Modern, intuitive, and enjoyable. With expert guidance at every step, highlight your skills, achievements, and personality.' },
-  { q: 'Is ResumeFlow free to use?', a: 'Yes, ResumeFlow is free to use. New users get full access to all features for 7 days. After that, you can continue with the free tier or upgrade to Pro.' },
+  { q: 'Why use Covera.ai for your job application?', a: 'Covera.ai helps you build a resume that feels personal and gets remembered. Modern, intuitive, and enjoyable. With expert guidance at every step, highlight your skills, achievements, and personality.' },
+  { q: 'Is Covera.ai free to use?', a: 'Yes, Covera.ai is free to use. New users get full access to all features for 7 days. After that, you can continue with the free tier or upgrade to Pro.' },
   { q: 'Are your resumes ATS-friendly?', a: 'Every template is tested against major ATS systems (Workday, Taleo, Greenhouse, Lever). We use clean layouts, readable fonts, and standard section titles.' },
-  { q: 'What AI tools does ResumeFlow offer?', a: 'Our AI tools help you rewrite content with industry-relevant language, generate bullet points, translate resumes into 30+ languages, and tailor resumes to any job description with one click.' },
+  { q: 'What AI tools does Covera.ai offer?', a: 'Our AI tools help you rewrite content with industry-relevant language, generate bullet points, translate resumes into 30+ languages, and tailor resumes to any job description with one click.' },
   { q: 'Do you support languages other than English?', a: 'Yes! We support Spanish, French, German, Italian, Swedish, Portuguese, Dutch, Danish, Finnish, Czech, Polish, and Norwegian.' },
-  { q: 'How to use the ResumeFlow Builder?', a: 'Upload your old resume or enter your job title to pick a template. Drag and drop sections, fill in details, use AI tips and proofreading. Tailor to any JD in one click, then download as PDF.' },
-  { q: 'Is my data secure and GDPR compliant?', a: 'Yes. Your data is fully encrypted, never sold, and only accessed to provide our service. ResumeFlow is GDPR-compliant. You can export or delete your information anytime.' },
+  { q: 'How to use the Covera.ai Builder?', a: 'Upload your old resume or enter your job title to pick a template. Drag and drop sections, fill in details, use AI tips and proofreading. Tailor to any JD in one click, then download as PDF.' },
+  { q: 'Is my data secure and GDPR compliant?', a: 'Yes. Your data is fully encrypted, never sold, and only accessed to provide our service. Covera.ai is GDPR-compliant. You can export or delete your information anytime.' },
 ];
 
 export const mockResumes = [

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authApi } from '../lib/api';
 
 const AuthContext = createContext(null);
 
@@ -7,72 +8,70 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load from localStorage
-    const saved = localStorage.getItem('resumeflow_user');
-    if (saved) {
-      try {
-        setUser(JSON.parse(saved));
-      } catch (e) {
-        localStorage.removeItem('resumeflow_user');
+    const init = async () => {
+      const token = localStorage.getItem('covera_token');
+      const cachedUser = localStorage.getItem('covera_user');
+      if (cachedUser) {
+        try { setUser(JSON.parse(cachedUser)); } catch (e) { /* ignore */ }
       }
-    }
-    setLoading(false);
+      if (token) {
+        try {
+          const fresh = await authApi.me();
+          setUser(fresh);
+          localStorage.setItem('covera_user', JSON.stringify(fresh));
+        } catch (e) {
+          localStorage.removeItem('covera_token');
+          localStorage.removeItem('covera_user');
+          setUser(null);
+        }
+      }
+      setLoading(false);
+    };
+    init();
   }, []);
 
-  const login = (email, password) => {
-    // Mock login
-    const mockUser = {
-      id: 'u_' + Date.now(),
-      name: email.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      email,
-      plan: 'free',
-      avatar: null,
-      createdAt: new Date().toISOString(),
-    };
-    localStorage.setItem('resumeflow_user', JSON.stringify(mockUser));
-    setUser(mockUser);
-    return mockUser;
+  const login = async (email, password) => {
+    const res = await authApi.login(email, password);
+    localStorage.setItem('covera_token', res.token);
+    localStorage.setItem('covera_user', JSON.stringify(res.user));
+    setUser(res.user);
+    return res.user;
   };
 
-  const signup = (name, email, password) => {
-    const mockUser = {
-      id: 'u_' + Date.now(),
-      name,
-      email,
-      plan: 'free',
-      avatar: null,
-      createdAt: new Date().toISOString(),
-    };
-    localStorage.setItem('resumeflow_user', JSON.stringify(mockUser));
-    setUser(mockUser);
-    return mockUser;
+  const signup = async (name, email, password) => {
+    const res = await authApi.signup(name, email, password);
+    localStorage.setItem('covera_token', res.token);
+    localStorage.setItem('covera_user', JSON.stringify(res.user));
+    setUser(res.user);
+    return res.user;
   };
 
-  const loginWithGoogle = () => {
-    const mockUser = {
-      id: 'u_google_' + Date.now(),
+  const loginWithGoogle = async () => {
+    // Simple demo Google login — in production, integrate Google Identity Services.
+    const demoProfile = {
+      email: `user${Date.now()}@gmail.com`,
       name: 'Google User',
-      email: 'user@gmail.com',
-      plan: 'free',
-      avatar: null,
-      createdAt: new Date().toISOString(),
-      provider: 'google',
+      google_id: `g_${Date.now()}`,
+      picture: null,
     };
-    localStorage.setItem('resumeflow_user', JSON.stringify(mockUser));
-    setUser(mockUser);
-    return mockUser;
+    const res = await authApi.google(demoProfile);
+    localStorage.setItem('covera_token', res.token);
+    localStorage.setItem('covera_user', JSON.stringify(res.user));
+    setUser(res.user);
+    return res.user;
   };
 
   const logout = () => {
-    localStorage.removeItem('resumeflow_user');
+    localStorage.removeItem('covera_token');
+    localStorage.removeItem('covera_user');
     setUser(null);
   };
 
-  const updatePlan = (plan) => {
-    if (!user) return;
-    const updated = { ...user, plan };
-    localStorage.setItem('resumeflow_user', JSON.stringify(updated));
-    setUser(updated);
+  const updatePlan = async (plan) => {
+    const u = await authApi.updatePlan(plan);
+    setUser(u);
+    localStorage.setItem('covera_user', JSON.stringify(u));
+    return u;
   };
 
   return (

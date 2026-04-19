@@ -133,7 +133,7 @@ const Landing = () => {
               <span className="text-xs font-bold text-slate-700">⭐ 4.8 · 5,187 Reviews</span>
             </div>
             <h1 className="text-5xl lg:text-6xl font-extrabold text-slate-900 leading-[1.05] tracking-tight mb-5">
-              Land more interviews with <span className="relative inline-block"><span className="relative z-10">ResumeFlow's</span><span className="absolute bottom-1 left-0 w-full h-3 bg-[#FF6B47]/30 -z-0"></span></span> Resume Builder
+              Land more interviews with <span className="relative inline-block"><span className="relative z-10">Covera.ai's</span><span className="absolute bottom-1 left-0 w-full h-3 bg-[#FF6B47]/30 -z-0"></span></span> Resume Builder
             </h1>
             <p className="text-lg text-slate-600 leading-relaxed mb-7 max-w-xl">
               ATS Check, AI Writer, and One-Click Job Tailoring make your resume stand out to recruiters. Build a professional resume in minutes.
@@ -243,7 +243,7 @@ const Landing = () => {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <h2 className="text-3xl lg:text-4xl font-extrabold text-white mb-3">Chosen by 10 million job applicants worldwide</h2>
-            <p className="text-white/70 max-w-2xl mx-auto">ResumeFlow is a modern resume builder helping job seekers at every step with ATS-friendly templates and AI-powered tools.</p>
+            <p className="text-white/70 max-w-2xl mx-auto">Covera.ai is a modern resume builder helping job seekers at every step with ATS-friendly templates and AI-powered tools.</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {mockStats.map(s => (
@@ -267,7 +267,7 @@ const Landing = () => {
               Resumes optimized for Applicant Tracking Systems
             </h2>
             <p className="text-lg text-slate-600 leading-relaxed mb-6">
-              All ResumeFlow templates are tested with top Applicant Tracking Systems (ATS) to guarantee full compatibility. Clean layouts, readable fonts, and standard section titles — nothing gets lost.
+              All Covera.ai templates are tested with top Applicant Tracking Systems (ATS) to guarantee full compatibility. Clean layouts, readable fonts, and standard section titles — nothing gets lost.
             </p>
             <ul className="space-y-3 mb-8">
               {['Readable contact information parsing', 'Full experience section parsing', 'Optimized skills section', 'Tested with Workday, Taleo, Greenhouse, Lever'].map(item => (
@@ -364,7 +364,7 @@ const Landing = () => {
             <h2 className="text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">
               Trusted by professionals worldwide
             </h2>
-            <p className="text-lg text-slate-600">Join millions of job seekers who've built standout resumes with ResumeFlow.</p>
+            <p className="text-lg text-slate-600">Join millions of job seekers who've built standout resumes with Covera.ai.</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {mockTestimonials.map((t) => (
@@ -463,7 +463,7 @@ const Landing = () => {
             Your resume is an extension of yourself — make one that's truly you
           </h2>
           <p className="text-lg text-white/80 mb-8 max-w-2xl mx-auto">
-            Join 15M+ professionals who've built standout resumes with ResumeFlow.
+            Join 15M+ professionals who've built standout resumes with Covera.ai.
           </p>
           <Link to="/signup" className="inline-flex items-center gap-2 px-8 py-4 bg-[#FF6B47] hover:bg-[#ff5630] text-white rounded-full font-bold text-lg shadow-2xl shadow-[#FF6B47]/30 transition-all">
             Build Your Resume Now <ArrowRight className="w-5 h-5" />
