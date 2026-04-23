@@ -143,7 +143,7 @@ const JDTailor = () => {
               {tailoring && (
                 <div className="mt-2 p-3 bg-white rounded-xl border border-slate-100 text-xs text-slate-500 flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-slate-200 border-t-[#FF6B47] rounded-full animate-spin"></div>
-                  Claude Sonnet 4.5 is tailoring your resume to this JD...
+                  AI is tailoring your resume to this JD...
                 </div>
               )}
             </div>

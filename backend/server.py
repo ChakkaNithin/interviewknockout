@@ -25,11 +25,11 @@ import ai_service
 import jobs_service
 from file_utils import extract_text_from_upload
 
-mongo_url = os.environ['MONGO_URL']
+mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ.get('DB_NAME', 'covera_ai')]
+db = client[os.environ.get('DB_NAME', 'interviewknockout')]
 
-app = FastAPI(title="Covera.ai API", version="1.0.0")
+app = FastAPI(title="InterviewKnockout API", version="1.0.0")
 api_router = APIRouter(prefix="/api")
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -50,7 +50,7 @@ def user_to_public(u: dict) -> UserPublic:
 
 @api_router.get("/")
 async def root():
-    return {"name": "Covera.ai API", "status": "ok", "version": "1.0.0"}
+    return {"name": "InterviewKnockout API", "status": "ok", "version": "1.0.0"}
 
 
 @api_router.get("/health")
@@ -95,24 +95,61 @@ async def login(payload: UserLogin):
 
 @api_router.post("/auth/google", response_model=AuthResponse)
 async def google_auth(payload: GoogleAuthRequest):
-    u = await db.users.find_one({"email": payload.email.lower()})
-    if not u:
-        user_id = uid()
-        doc = {
-            "id": user_id,
-            "email": payload.email.lower(),
-            "name": payload.name,
-            "password_hash": "",
-            "plan": "free",
-            "avatar": payload.picture,
-            "provider": "google",
-            "google_id": payload.google_id,
-            "created_at": datetime.utcnow(),
-        }
-        await db.users.insert_one(doc)
-        u = doc
-    token = create_access_token(u["id"])
-    return AuthResponse(user=user_to_public(u), token=token)
+    # Verify Google JWT token
+    # Note: To enable this, you need to:
+    # 1. Install google-auth: pip install google-auth
+    # 2. Get Google Client ID from https://console.cloud.google.com/
+    # 3. Add GOOGLE_CLIENT_ID to .env
+    # 4. Uncomment the verification code below
+    
+    raise HTTPException(
+        status_code=501,
+        detail="Google Sign-In is not configured. Please use email/password login or contact support."
+    )
+    
+    """
+    # Uncomment this code after setting up Google OAuth:
+    from google.oauth2 import id_token
+    from google.auth.transport import requests
+    
+    try:
+        # Verify the token
+        idinfo = id_token.verify_oauth2_token(
+            payload.token,
+            requests.Request(),
+            os.environ.get('GOOGLE_CLIENT_ID')
+        )
+        
+        # Extract user info
+        email = idinfo['email']
+        name = idinfo.get('name', email.split('@')[0])
+        google_id = idinfo['sub']
+        picture = idinfo.get('picture')
+        
+        # Find or create user
+        u = await db.users.find_one({"email": email.lower()})
+        if not u:
+            user_id = uid()
+            doc = {
+                "id": user_id,
+                "email": email.lower(),
+                "name": name,
+                "password_hash": "",
+                "plan": "free",
+                "avatar": picture,
+                "provider": "google",
+                "google_id": google_id,
+                "created_at": datetime.utcnow(),
+            }
+            await db.users.insert_one(doc)
+            u = doc
+        
+        token = create_access_token(u["id"])
+        return AuthResponse(user=user_to_public(u), token=token)
+        
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=f"Invalid Google token: {e}")
+    """
 
 
 @api_router.get("/auth/me", response_model=UserPublic)
@@ -251,17 +288,27 @@ async def ai_generate(payload: AIGenerateRequest):
 
 # ========== Job Search ==========
 @api_router.post("/jobs/search", response_model=JobSearchResponse)
-async def search_jobs(payload: JobSearchRequest):
+async def search_jobs_endpoint(payload: JobSearchRequest):
     try:
         raw = await jobs_service.search_jobs(
             search_term=payload.search_term,
             location=payload.location,
-            sites=payload.sites,
             hours_old=payload.hours_old,
             is_remote=payload.is_remote,
-            results_per_site=payload.results_per_site,
-            use_serpapi=payload.use_serpapi,
+            results_per_page=payload.results_per_page,
             resume_skills=payload.resume_skills,
+            min_salary=payload.min_salary,
+            max_salary=payload.max_salary,
+            seniority_levels=payload.seniority_levels,
+            technologies=payload.technologies,
+            min_employees=payload.min_employees,
+            max_employees=payload.max_employees,
+            min_funding=payload.min_funding,
+            max_funding=payload.max_funding,
+            industries=payload.industries,
+            company_names=payload.company_names,
+            easy_apply=payload.easy_apply,
+            page=payload.page,
         )
         jobs: List[Job] = []
         for j in raw:

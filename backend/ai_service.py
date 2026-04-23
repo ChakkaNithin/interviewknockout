@@ -3,13 +3,16 @@ import json
 import re
 import logging
 from typing import Dict, Any, List
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+import google.generativeai as genai
 
 logger = logging.getLogger(__name__)
 
-EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
-MODEL_PROVIDER = "anthropic"
-MODEL_NAME = "claude-sonnet-4-5-20250929"
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+MODEL_NAME = "gemini-2.0-flash-exp"
+
+# Configure Gemini
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 
 def _extract_json(text: str) -> Dict[str, Any]:
@@ -27,13 +30,24 @@ def _extract_json(text: str) -> Dict[str, Any]:
 
 
 async def _chat(session_id: str, system: str, user_text: str, max_tokens: int = 4000) -> str:
-    chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=session_id,
-        system_message=system,
-    ).with_model(MODEL_PROVIDER, MODEL_NAME).with_params(max_tokens=max_tokens)
-    resp = await chat.send_message(UserMessage(text=user_text))
-    return str(resp)
+    """Send a chat request to Gemini API."""
+    try:
+        model = genai.GenerativeModel(
+            model_name=MODEL_NAME,
+            generation_config={
+                "temperature": 0.7,
+                "top_p": 0.95,
+                "top_k": 40,
+                "max_output_tokens": max_tokens,
+            },
+            system_instruction=system
+        )
+        
+        response = model.generate_content(user_text)
+        return response.text
+    except Exception as e:
+        logger.exception(f"Gemini API call failed: {e}")
+        raise
 
 
 ATS_SYSTEM = """You are a senior ATS optimization expert and professional resume reviewer with 15+ years of experience.

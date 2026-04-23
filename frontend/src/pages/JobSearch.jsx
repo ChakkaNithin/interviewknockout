@@ -5,10 +5,7 @@ import { jobsApi } from '../lib/api';
 import { MapPin, Briefcase, Clock, DollarSign, TrendingUp, Home, Star, Download, ArrowRight, LayoutGrid, List, Search, Check, Loader2, User, Edit3, Mail, Filter, Globe, Calendar, Zap, Users, Plus, X, ChevronDown, Settings } from 'lucide-react';
 
 const siteCfg = {
-  linkedin: { color: '#0A66C2', label: 'LinkedIn', short: 'in', bg: '#E8F0FB' },
-  naukri: { color: '#2867B2', label: 'Naukri', short: 'N', bg: '#E8EEF8' },
-  indeed: { color: '#2164F3', label: 'Indeed', short: 'IN', bg: '#E8EFFE' },
-  google: { color: '#EA4335', label: 'Google', short: 'G', bg: '#FDE8E8' },
+  job_board: { color: '#4F8EF7', label: 'Job Board', short: 'J', bg: '#EFF6FF' },
 };
 
 const priorityCfg = {
@@ -172,12 +169,11 @@ const JobSearch = () => {
       const resp = await jobsApi.search({
         search_term: searchTerm,
         location: loc,
-        sites: ['linkedin', 'indeed', 'naukri', 'google'],
         hours_old: hoursFromPosted(),
         is_remote: filters.remote === 'yes' ? true : filters.remote === 'no' ? false : null,
-        results_per_site: 10,
-        use_serpapi: true,
+        results_per_page: 25,
         resume_skills: profile.skills,
+        easy_apply: filters.easyApply === 'yes' ? true : filters.easyApply === 'no' ? false : null,
       });
       if (resp.jobs && resp.jobs.length > 0) {
         setJobs(resp.jobs);
@@ -199,7 +195,7 @@ const JobSearch = () => {
     }
   };
 
-  const sites = ['all', 'linkedin', 'naukri', 'indeed', 'google'];
+  const sites = ['all', 'job_board'];
   const filtered = jobs.filter(j => {
     const matchesSite = siteFilter === 'all' || j.site === siteFilter;
     const matchesSearch = !searchQuery || j.title.toLowerCase().includes(searchQuery.toLowerCase()) || j.company.toLowerCase().includes(searchQuery.toLowerCase());
@@ -235,10 +231,10 @@ const JobSearch = () => {
           <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-extrabold tracking-tight">AI-Powered Job Search</h1>
-              <p className="text-white/80 mt-1 text-sm">Configure your profile & filters, then let JobSpy + SerpApi find your perfect match.</p>
+              <p className="text-white/80 mt-1 text-sm">Configure your profile & filters, then let our AI-powered search find your perfect match.</p>
             </div>
             <button onClick={runSearch} disabled={loading} className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF6B47] hover:bg-[#ff5630] disabled:opacity-60 text-white rounded-full font-bold shadow-lg transition-all">
-              {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Searching Live Jobs...</> : <><Search className="w-4 h-4" /> Search Jobs Now</>}
+              {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Searching Jobs...</> : <><Search className="w-4 h-4" /> Search Jobs Now</>}
             </button>
           </div>
         </div>
@@ -440,7 +436,7 @@ const JobSearch = () => {
             <div className="flex items-center justify-between mb-5">
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F5F0] text-[#0D6B4F] text-xs font-bold uppercase tracking-wider">
-                  <Check className="w-3.5 h-3.5" /> {isDemoData ? 'Demo results' : 'Live via JobSpy + SerpApi'}
+                  <Check className="w-3.5 h-3.5" /> {isDemoData ? 'Demo Results' : 'Live Results'}
                 </div>
                 <div className="text-sm text-slate-600 mt-1">{jobs.length} jobs · {profile.targetJobTitles[0] || 'Target role'} · {filters.country}</div>
               </div>

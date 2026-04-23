@@ -6,7 +6,7 @@ const API_BASE = `${BACKEND_URL}/api`;
 const api = axios.create({ baseURL: API_BASE, timeout: 120000 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('covera_token');
+  const token = localStorage.getItem('ik_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -16,8 +16,8 @@ api.interceptors.response.use(
   (err) => {
     if (err.response && err.response.status === 401) {
       // clear auth on 401
-      localStorage.removeItem('covera_token');
-      localStorage.removeItem('covera_user');
+      localStorage.removeItem('ik_token');
+      localStorage.removeItem('ik_user');
     }
     return Promise.reject(err);
   }

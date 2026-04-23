@@ -9,25 +9,25 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const init = async () => {
-      const token = localStorage.getItem('covera_token');
-      const cachedUser = localStorage.getItem('covera_user');
+      const token = localStorage.getItem('ik_token');
+      const cachedUser = localStorage.getItem('ik_user');
       if (cachedUser) {
         try {
           setUser(JSON.parse(cachedUser));
         } catch (error) {
           console.error('Failed to parse cached user:', error);
-          localStorage.removeItem('covera_user');
+          localStorage.removeItem('ik_user');
         }
       }
       if (token) {
         try {
           const fresh = await authApi.me();
           setUser(fresh);
-          localStorage.setItem('covera_user', JSON.stringify(fresh));
+          localStorage.setItem('ik_user', JSON.stringify(fresh));
         } catch (error) {
           console.error('Session expired or invalid:', error);
-          localStorage.removeItem('covera_token');
-          localStorage.removeItem('covera_user');
+          localStorage.removeItem('ik_token');
+          localStorage.removeItem('ik_user');
           setUser(null);
         }
       }
@@ -40,45 +40,39 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const res = await authApi.login(email, password);
-    localStorage.setItem('covera_token', res.token);
-    localStorage.setItem('covera_user', JSON.stringify(res.user));
+    localStorage.setItem('ik_token', res.token);
+    localStorage.setItem('ik_user', JSON.stringify(res.user));
     setUser(res.user);
     return res.user;
   };
 
   const signup = async (name, email, password) => {
     const res = await authApi.signup(name, email, password);
-    localStorage.setItem('covera_token', res.token);
-    localStorage.setItem('covera_user', JSON.stringify(res.user));
+    localStorage.setItem('ik_token', res.token);
+    localStorage.setItem('ik_user', JSON.stringify(res.user));
     setUser(res.user);
     return res.user;
   };
 
-  const loginWithGoogle = async () => {
-    // Simple demo Google login — in production, integrate Google Identity Services.
-    const demoProfile = {
-      email: `user${Date.now()}@gmail.com`,
-      name: 'Google User',
-      google_id: `g_${Date.now()}`,
-      picture: null,
-    };
-    const res = await authApi.google(demoProfile);
-    localStorage.setItem('covera_token', res.token);
-    localStorage.setItem('covera_user', JSON.stringify(res.user));
+  const loginWithGoogle = async (googleToken) => {
+    // Send Google JWT token to backend for verification
+    const res = await authApi.google({ token: googleToken });
+    localStorage.setItem('ik_token', res.token);
+    localStorage.setItem('ik_user', JSON.stringify(res.user));
     setUser(res.user);
     return res.user;
   };
 
   const logout = () => {
-    localStorage.removeItem('covera_token');
-    localStorage.removeItem('covera_user');
+    localStorage.removeItem('ik_token');
+    localStorage.removeItem('ik_user');
     setUser(null);
   };
 
   const updatePlan = async (plan) => {
     const u = await authApi.updatePlan(plan);
     setUser(u);
-    localStorage.setItem('covera_user', JSON.stringify(u));
+    localStorage.setItem('ik_user', JSON.stringify(u));
     return u;
   };
 

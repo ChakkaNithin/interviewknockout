@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FileText, Mail, Lock, User, Eye, EyeOff, ArrowRight, Check } from 'lucide-react';
@@ -14,6 +14,18 @@ const Auth = ({ mode = 'login' }) => {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Load Google Identity Services script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,16 +51,36 @@ const Auth = ({ mode = 'login' }) => {
   };
 
   const handleGoogle = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      await loginWithGoogle();
-      navigate(from);
-    } catch (err) {
-      setError(err.response?.data?.detail || err.message || 'Google login failed');
-    } finally {
-      setLoading(false);
+    setError('Google Sign-In requires a Google Client ID to be configured. Please contact support or use email/password login.');
+    // To enable Google login:
+    // 1. Get Google OAuth Client ID from https://console.cloud.google.com/
+    // 2. Add REACT_APP_GOOGLE_CLIENT_ID to frontend/.env
+    // 3. Uncomment the code below and remove this error message
+    
+    /* 
+    if (!window.google) {
+      setError('Google Sign-In is loading. Please try again in a moment.');
+      return;
     }
+    
+    window.google.accounts.id.initialize({
+      client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID,
+      callback: async (response) => {
+        setLoading(true);
+        setError('');
+        try {
+          await loginWithGoogle(response.credential);
+          navigate(from);
+        } catch (err) {
+          setError(err.response?.data?.detail || err.message || 'Google login failed');
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
+    
+    window.google.accounts.id.prompt();
+    */
   };
 
   const benefits = [
@@ -68,14 +100,14 @@ const Auth = ({ mode = 'login' }) => {
           <div className="w-10 h-10 rounded-xl bg-[#FF6B47] flex items-center justify-center">
             <FileText className="w-5 h-5 text-white" strokeWidth={2.5} />
           </div>
-          <span className="text-xl font-bold">Covera.ai</span>
+          <span className="text-xl font-bold">InterviewKnockout</span>
         </Link>
         <div className="relative">
           <h1 className="text-4xl font-extrabold text-white leading-tight mb-4">
             Build a resume that lands interviews in minutes.
           </h1>
           <p className="text-white/80 mb-8">
-            Join 15M+ job seekers who've used Covera.ai to craft standout resumes and land their dream roles.
+            Join 15M+ job seekers who've used InterviewKnockout to craft standout resumes and land their dream roles.
           </p>
           <ul className="space-y-3">
             {benefits.map(b => (
@@ -106,7 +138,7 @@ const Auth = ({ mode = 'login' }) => {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0F3D2E] to-[#1F6B4F] flex items-center justify-center">
                 <FileText className="w-5 h-5 text-white" strokeWidth={2.5} />
               </div>
-              <span className="text-xl font-bold text-slate-900">Covera.ai</span>
+              <span className="text-xl font-bold text-slate-900">InterviewKnockout</span>
             </Link>
           </div>
           <h2 className="text-3xl font-extrabold text-slate-900 mb-2">
@@ -131,7 +163,7 @@ const Auth = ({ mode = 'login' }) => {
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Full Name</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="John Doe" className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0F3D2E] focus:ring-2 focus:ring-[#0F3D2E]/10 transition" />
+                  <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="John Doe" autoComplete="name" className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0F3D2E] focus:ring-2 focus:ring-[#0F3D2E]/10 transition" />
                 </div>
               </div>
             )}
@@ -139,14 +171,14 @@ const Auth = ({ mode = 'login' }) => {
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="you@example.com" className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0F3D2E] focus:ring-2 focus:ring-[#0F3D2E]/10 transition" />
+                <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="you@example.com" autoComplete="email" className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0F3D2E] focus:ring-2 focus:ring-[#0F3D2E]/10 transition" />
               </div>
             </div>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">Password</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input type={showPw ? 'text' : 'password'} value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="At least 6 characters" className="w-full pl-10 pr-10 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0F3D2E] focus:ring-2 focus:ring-[#0F3D2E]/10 transition" />
+                <input type={showPw ? 'text' : 'password'} value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="At least 6 characters" autoComplete={isLogin ? "current-password" : "new-password"} className="w-full pl-10 pr-10 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0F3D2E] focus:ring-2 focus:ring-[#0F3D2E]/10 transition" />
                 <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                   {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>

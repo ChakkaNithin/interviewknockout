@@ -28,7 +28,7 @@ const Navbar = () => {
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0F3D2E] to-[#1F6B4F] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
               <FileText className="w-5 h-5 text-white" strokeWidth={2.5} />
             </div>
-            <span className="text-xl font-bold text-slate-900 tracking-tight">Covera.ai</span>
+            <span className="text-xl font-bold text-slate-900 tracking-tight">InterviewKnockout</span>
           </Link>
 
           {/* Desktop Nav */}

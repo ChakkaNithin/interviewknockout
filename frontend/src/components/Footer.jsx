@@ -54,7 +54,7 @@ const Footer = () => {
               <div className="w-9 h-9 rounded-xl bg-[#FF6B47] flex items-center justify-center">
                 <FileText className="w-5 h-5 text-white" strokeWidth={2.5} />
               </div>
-              <span className="text-xl font-bold text-white">Covera.ai</span>
+              <span className="text-xl font-bold text-white">InterviewKnockout</span>
             </div>
             <p className="text-sm text-slate-300 leading-relaxed mb-5 max-w-xs">
               The modern resume builder trusted by 15M+ job seekers worldwide. Build, tailor, and land the job.
@@ -84,7 +84,7 @@ const Footer = () => {
         </div>
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="text-sm text-slate-400">
-            © {new Date().getFullYear()} Covera.ai. All rights reserved.
+            © {new Date().getFullYear()} InterviewKnockout. All rights reserved.
           </div>
           <div className="flex items-center gap-6 text-xs text-slate-400">
             <span>🌐 English</span>

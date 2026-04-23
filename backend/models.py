@@ -23,11 +23,8 @@ class UserLogin(BaseModel):
 
 
 class GoogleAuthRequest(BaseModel):
-    # Simple Google auth stub - accepts user-provided profile. In prod, verify token server-side.
-    email: EmailStr
-    name: str
-    google_id: Optional[str] = None
-    picture: Optional[str] = None
+    # Google JWT token from Google Identity Services
+    token: str
 
 
 class UserPublic(BaseModel):
@@ -180,12 +177,23 @@ class AIGenerateResponse(BaseModel):
 class JobSearchRequest(BaseModel):
     search_term: str
     location: str = "India"
-    sites: List[str] = Field(default_factory=lambda: ["linkedin", "indeed", "naukri"])
     hours_old: int = 168
     is_remote: Optional[bool] = None
-    results_per_site: int = 10
-    use_serpapi: bool = True  # for google jobs
+    results_per_page: int = 25
     resume_skills: List[str] = Field(default_factory=list)
+    # Advanced filters
+    min_salary: Optional[int] = None
+    max_salary: Optional[int] = None
+    seniority_levels: Optional[List[str]] = None  # junior, mid_level, senior, staff, c_level
+    technologies: Optional[List[str]] = None
+    min_employees: Optional[int] = None
+    max_employees: Optional[int] = None
+    min_funding: Optional[int] = None
+    max_funding: Optional[int] = None
+    industries: Optional[List[int]] = None
+    company_names: Optional[List[str]] = None
+    easy_apply: Optional[bool] = None
+    page: int = 0
 
 
 class Job(BaseModel):

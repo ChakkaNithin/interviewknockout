@@ -2,21 +2,12 @@ import os
 import logging
 import asyncio
 from typing import List, Dict, Any, Optional
-import pandas as pd
+import httpx
 
 logger = logging.getLogger(__name__)
 
-SERPAPI_KEY = os.environ.get("SERPAPI_KEY", "")
-
-SITE_MAP = {
-    "linkedin": "linkedin",
-    "indeed": "indeed",
-    "glassdoor": "glassdoor",
-    "zip_recruiter": "zip_recruiter",
-    "naukri": "naukri",
-    "google": "google",
-    "bayt": "bayt",
-}
+THEIRSTACK_API_KEY = os.environ.get("THEIRSTACK_API_KEY", "")
+THEIRSTACK_API_URL = "https://api.theirstack.com/v1/jobs/search"
 
 
 def _score_job(job: Dict[str, Any], user_skills: List[str]) -> (int, str):
@@ -48,26 +39,14 @@ def _extract_skills(description: str) -> List[str]:
     return [s for s in common if s.lower() in desc_lower][:8]
 
 
-def _safe(val):
-    if val is None:
-        return ""
-    try:
-        if pd.isna(val):
-            return ""
-    except Exception:
-        pass
-    return val
-
-
-def _relative_date(date_val) -> str:
-    if not date_val:
+def _relative_date(date_str: str) -> str:
+    """Convert ISO date string to relative time."""
+    if not date_str:
         return "Recently"
     try:
-        if isinstance(date_val, str):
-            date_val = pd.to_datetime(date_val, errors="coerce")
-        if pd.isna(date_val):
-            return "Recently"
-        delta = pd.Timestamp.now() - date_val
+        from datetime import datetime, timezone
+        date_obj = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+        delta = datetime.now(timezone.utc) - date_obj
         days = delta.days
         if days == 0:
             return "Today"
@@ -83,144 +62,229 @@ def _relative_date(date_val) -> str:
         return "Recently"
 
 
-def _run_jobspy_sync(search_term: str, location: str, sites: List[str], hours_old: int, is_remote: Optional[bool], results_per_site: int) -> List[Dict[str, Any]]:
-    """Synchronous wrapper for jobspy (run in thread)."""
+def _map_theirstack_job(job_data: Dict[str, Any], user_skills: List[str]) -> Dict[str, Any]:
+    """Map TheirStack job response to our internal format."""
+    company = job_data.get("company_object", {}) or {}
+    
+    # Extract salary info
+    min_salary = job_data.get("min_salary_usd")
+    max_salary = job_data.get("max_salary_usd")
+    
+    # Extract location
+    location = job_data.get("location", "")
+    if not location and job_data.get("locations"):
+        first_loc = job_data["locations"][0]
+        city = first_loc.get("city", "")
+        country = first_loc.get("country_code", "")
+        location = f"{city}, {country}" if city and country else (city or country or "Remote")
+    
+    # Extract company info
+    company_name = company.get("name", "Unknown Company")
+    company_domain = company.get("domain", "")
+    
+    # Extract job details
+    title = job_data.get("title", "")
+    description = job_data.get("text", "") or job_data.get("description", "")
+    job_url = job_data.get("url", "#")
+    date_posted = job_data.get("date_posted", "")
+    is_remote = job_data.get("remote", False)
+    
+    # Extract technologies from job
+    technologies = job_data.get("technologies", [])
+    tech_names = [t.get("name", "") for t in technologies if isinstance(t, dict) and t.get("name")][:8]
+    
+    # If no tech from API, extract from description
+    if not tech_names:
+        tech_names = _extract_skills(description)
+    
+    # Determine seniority/experience
+    seniority = job_data.get("seniority", "")
+    experience_map = {
+        "junior": "0-2 years",
+        "mid_level": "2-5 years",
+        "senior": "5-8 years",
+        "staff": "8-12 years",
+        "c_level": "12+ years"
+    }
+    experience_range = experience_map.get(seniority, "2-7 years")
+    
+    # Company rating (use employee count as proxy if available)
+    employee_count = company.get("employee_count", 0)
+    company_rating = 4.0
+    if employee_count:
+        if employee_count > 10000:
+            company_rating = 4.5
+        elif employee_count > 1000:
+            company_rating = 4.3
+        elif employee_count < 50:
+            company_rating = 3.8
+    
+    # Build job object
+    job = {
+        "site": "job_board",
+        "title": title,
+        "company": company_name,
+        "location": location,
+        "job_type": "Full-time",  # TheirStack doesn't always provide this
+        "date_posted": _relative_date(date_posted),
+        "is_remote": is_remote,
+        "min_amount": min_salary,
+        "max_amount": max_salary,
+        "currency": "USD" if min_salary or max_salary else "",
+        "description": description[:2000] if description else "",
+        "job_url": job_url,
+        "skills": tech_names,
+        "experience_range": experience_range,
+        "company_rating": company_rating,
+        "company_domain": company_domain,
+        "employee_count": employee_count,
+        "funding": company.get("funding_usd"),
+        "industry": company.get("industry", {}).get("name", "") if isinstance(company.get("industry"), dict) else "",
+    }
+    
+    # Calculate match score
+    score, priority = _score_job(job, user_skills)
+    job["score"] = score
+    job["priority"] = priority
+    
+    return job
+
+
+async def search_jobs(
+    search_term: str,
+    location: str,
+    hours_old: int,
+    is_remote: Optional[bool],
+    results_per_page: int,
+    resume_skills: List[str],
+    # TheirStack specific filters
+    min_salary: Optional[int] = None,
+    max_salary: Optional[int] = None,
+    seniority_levels: Optional[List[str]] = None,
+    technologies: Optional[List[str]] = None,
+    min_employees: Optional[int] = None,
+    max_employees: Optional[int] = None,
+    min_funding: Optional[int] = None,
+    max_funding: Optional[int] = None,
+    industries: Optional[List[int]] = None,
+    company_names: Optional[List[str]] = None,
+    easy_apply: Optional[bool] = None,
+    page: int = 0,
+) -> List[Dict[str, Any]]:
+    """Search jobs using TheirStack API."""
+    
+    if not THEIRSTACK_API_KEY:
+        logger.error("THEIRSTACK_API_KEY not configured")
+        raise ValueError("Job search API key not configured")
+    
+    # Calculate posted_at_max_age_days from hours_old
+    posted_at_max_age_days = max(0, hours_old // 24)
+    
+    # Extract country code from location (simple heuristic)
+    country_code = None
+    location_lower = location.lower()
+    country_map = {
+        "india": "IN",
+        "united states": "US",
+        "usa": "US",
+        "uk": "GB",
+        "united kingdom": "GB",
+        "canada": "CA",
+        "australia": "AU",
+        "germany": "DE",
+        "singapore": "SG",
+    }
+    for country_name, code in country_map.items():
+        if country_name in location_lower:
+            country_code = code
+            break
+    
+    # Build TheirStack request payload
+    payload = {
+        "job_title_or": [search_term] if search_term else [],
+        "posted_at_max_age_days": posted_at_max_age_days,
+        "limit": results_per_page,
+        "page": page,
+    }
+    
+    # Add optional filters
+    if country_code:
+        payload["job_country_code_or"] = [country_code]
+    
+    if is_remote is not None:
+        payload["remote"] = is_remote
+    
+    if easy_apply is not None:
+        payload["easy_apply"] = easy_apply
+    
+    if min_salary:
+        payload["min_salary_usd"] = min_salary
+    
+    if max_salary:
+        payload["max_salary_usd"] = max_salary
+    
+    if seniority_levels:
+        payload["job_seniority_or"] = seniority_levels
+    
+    if technologies:
+        payload["job_technology_slug_or"] = technologies
+    
+    if min_employees:
+        payload["min_employee_count"] = min_employees
+    
+    if max_employees:
+        payload["max_employee_count"] = max_employees
+    
+    if min_funding:
+        payload["min_funding_usd"] = min_funding
+    
+    if max_funding:
+        payload["max_funding_usd"] = max_funding
+    
+    if industries:
+        payload["industry_id_or"] = industries
+    
+    if company_names:
+        payload["company_name_or"] = company_names
+    
+    # Make API request
     try:
-        from jobspy import scrape_jobs
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                THEIRSTACK_API_URL,
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {THEIRSTACK_API_KEY}",
+                    "Content-Type": "application/json",
+                }
+            )
+            response.raise_for_status()
+            data = response.json()
+    except httpx.HTTPStatusError as e:
+        logger.error(f"TheirStack API error: {e.response.status_code} - {e.response.text}")
+        raise ValueError(f"Job search failed: {e.response.status_code}")
     except Exception as e:
-        logger.exception("jobspy import failed")
+        logger.exception(f"TheirStack API request failed: {e}")
+        raise ValueError(f"Job search failed: {str(e)}")
+    
+    # Parse response
+    jobs_data = data.get("data", [])
+    if not jobs_data:
+        logger.warning("No jobs returned from API")
         return []
-
-    site_names = [s for s in sites if s in SITE_MAP and s != "google"]
-    if not site_names:
-        return []
-
-    try:
-        df = scrape_jobs(
-            site_name=site_names,
-            search_term=search_term,
-            location=location,
-            results_wanted=results_per_site,
-            hours_old=hours_old,
-            is_remote=is_remote,
-            country_indeed="India" if "india" in location.lower() else "USA",
-            verbose=0,
-        )
-    except Exception as e:
-        logger.exception(f"jobspy scrape failed: {e}")
-        return []
-
-    if df is None or len(df) == 0:
-        return []
-
-    jobs = []
-    for _, row in df.iterrows():
-        jobs.append({
-            "site": _safe(row.get("site", "")),
-            "title": _safe(row.get("title", "")),
-            "company": _safe(row.get("company", "")),
-            "location": _safe(row.get("location", "")),
-            "job_type": _safe(row.get("job_type", "Full-time")),
-            "date_posted": _relative_date(row.get("date_posted")),
-            "is_remote": bool(_safe(row.get("is_remote", False))),
-            "min_amount": _safe(row.get("min_amount")) or None,
-            "max_amount": _safe(row.get("max_amount")) or None,
-            "currency": _safe(row.get("currency", "")),
-            "description": _safe(row.get("description", ""))[:2000] if row.get("description") else "",
-            "job_url": _safe(row.get("job_url", "#")) or "#",
-        })
-    return jobs
-
-
-def _run_serpapi_google_jobs_sync(search_term: str, location: str, results: int = 10) -> List[Dict[str, Any]]:
-    """Fetch Google Jobs via SerpApi."""
-    if not SERPAPI_KEY:
-        return []
-    try:
-        from serpapi import GoogleSearch
-    except Exception:
-        try:
-            from serpapi.google_search import GoogleSearch
-        except Exception:
-            logger.exception("serpapi import failed")
-            return []
-    try:
-        params = {
-            "engine": "google_jobs",
-            "q": f"{search_term} {location}",
-            "location": location,
-            "api_key": SERPAPI_KEY,
-        }
-        search = GoogleSearch(params)
-        results_data = search.get_dict()
-        jobs_raw = results_data.get("jobs_results", [])[:results]
-    except Exception as e:
-        logger.exception(f"SerpApi google_jobs failed: {e}")
-        return []
-
-    jobs = []
-    for j in jobs_raw:
-        detected = j.get("detected_extensions", {}) or {}
-        jobs.append({
-            "site": "google",
-            "title": j.get("title", ""),
-            "company": j.get("company_name", ""),
-            "location": j.get("location", location),
-            "job_type": detected.get("schedule_type", "Full-time"),
-            "date_posted": detected.get("posted_at", "Recently"),
-            "is_remote": "remote" in (j.get("location", "").lower()) or detected.get("work_from_home", False),
-            "min_amount": None,
-            "max_amount": None,
-            "currency": "",
-            "description": (j.get("description", "") or "")[:2000],
-            "job_url": j.get("share_link") or (j.get("apply_options", [{}])[0].get("link", "#") if j.get("apply_options") else "#"),
-        })
-    return jobs
-
-
-async def search_jobs(search_term: str, location: str, sites: List[str], hours_old: int, is_remote: Optional[bool], results_per_site: int, use_serpapi: bool, resume_skills: List[str]) -> List[Dict[str, Any]]:
-    loop = asyncio.get_event_loop()
-
-    tasks = []
-    # JobSpy
-    non_google_sites = [s for s in sites if s != "google"]
-    if non_google_sites:
-        tasks.append(loop.run_in_executor(None, _run_jobspy_sync, search_term, location, non_google_sites, hours_old, is_remote, results_per_site))
-    # SerpApi Google Jobs
-    if use_serpapi and "google" in sites:
-        tasks.append(loop.run_in_executor(None, _run_serpapi_google_jobs_sync, search_term, location, results_per_site))
-
-    all_jobs: List[Dict[str, Any]] = []
-    if tasks:
-        try:
-            results = await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=90)
-            for r in results:
-                if isinstance(r, list):
-                    all_jobs.extend(r)
-                elif isinstance(r, Exception):
-                    logger.error(f"search task failed: {r}")
-        except asyncio.TimeoutError:
-            logger.warning("Job search timed out")
-
-    # Post-process: score and format
+    
+    # Map to our format
     enriched = []
-    for j in all_jobs:
-        if not j.get("title"):
+    for job_data in jobs_data:
+        try:
+            mapped_job = _map_theirstack_job(job_data, resume_skills)
+            enriched.append(mapped_job)
+        except Exception as e:
+            logger.warning(f"Failed to map job: {e}")
             continue
-        skills = _extract_skills(j.get("description", ""))
-        score, priority = _score_job(j, resume_skills)
-        loc = j.get("location", "") or ""
-        currency = j.get("currency") or ("LPA" if "india" in loc.lower() else "USD")
-        enriched.append({
-            **j,
-            "skills": skills,
-            "score": score,
-            "priority": priority,
-            "currency": currency,
-            "company_rating": 4.0,
-            "experience_range": "2-7 years",
-        })
-
+    
     # Sort by score desc
     enriched.sort(key=lambda x: x.get("score", 0), reverse=True)
+    
+    logger.info(f"Returned {len(enriched)} jobs from search")
     return enriched
