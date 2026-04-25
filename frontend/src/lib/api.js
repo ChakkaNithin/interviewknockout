@@ -15,9 +15,9 @@ api.interceptors.response.use(
   (r) => r,
   (err) => {
     if (err.response && err.response.status === 401) {
-      // clear auth on 401
       localStorage.removeItem('ik_token');
       localStorage.removeItem('ik_user');
+      window.location.href = '/login';
     }
     return Promise.reject(err);
   }
@@ -68,6 +68,11 @@ export const jobsApi = {
   save: (job) => api.post('/jobs/save', job).then(r => r.data),
   saved: () => api.get('/jobs/saved').then(r => r.data),
   unsave: (id) => api.delete(`/jobs/saved/${id}`).then(r => r.data),
+};
+
+export const paymentsApi = {
+  createOrder: (plan, billing) => api.post('/payments/create-order', { plan, billing }).then(r => r.data),
+  verify: (payload) => api.post('/payments/verify', payload).then(r => r.data),
 };
 
 export default api;

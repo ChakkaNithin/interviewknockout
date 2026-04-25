@@ -1,7 +1,11 @@
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 def uid():
@@ -14,7 +18,7 @@ class UserBase(BaseModel):
 
 
 class UserSignup(UserBase):
-    password: str
+    password: str = Field(min_length=8, max_length=72)
 
 
 class UserLogin(BaseModel):
@@ -105,8 +109,8 @@ class Resume(BaseModel):
     target_role: str = ""
     data: ResumeData
     ats_score: Optional[int] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
 
 
 # ATS
@@ -222,3 +226,24 @@ class JobSearchResponse(BaseModel):
     total: int
     search_term: str
     location: str
+
+
+# Payments
+class PaymentOrderRequest(BaseModel):
+    plan: str   # "pro" | "premium"
+    billing: str  # "monthly" | "yearly"
+
+
+class PaymentOrderResponse(BaseModel):
+    order_id: str
+    amount: int   # paise
+    currency: str
+    key_id: str
+
+
+class PaymentVerifyRequest(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+    plan: str
+    billing: str

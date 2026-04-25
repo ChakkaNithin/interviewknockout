@@ -33,7 +33,7 @@ const Navbar = () => {
 
           {/* Desktop Nav */}
           <div className="hidden lg:flex items-center gap-1">
-            <Link to="/" className="px-4 py-2 text-sm font-semibold text-slate-700 hover:text-[#0F3D2E] transition-colors">
+            <Link to={user ? '/builder' : '/'} className="px-4 py-2 text-sm font-semibold text-slate-700 hover:text-[#0F3D2E] transition-colors">
               Resume Builder
             </Link>
             <div className="relative" onMouseEnter={() => setToolsOpen(true)} onMouseLeave={() => setToolsOpen(false)}>
@@ -61,7 +61,7 @@ const Navbar = () => {
             <Link to="/pricing" className="px-4 py-2 text-sm font-semibold text-slate-700 hover:text-[#0F3D2E] transition-colors">
               Pricing
             </Link>
-            <a href="#features" className="px-4 py-2 text-sm font-semibold text-slate-700 hover:text-[#0F3D2E] transition-colors">
+            <a href="/#features" className="px-4 py-2 text-sm font-semibold text-slate-700 hover:text-[#0F3D2E] transition-colors">
               Features
             </a>
           </div>
@@ -118,7 +118,7 @@ const Navbar = () => {
       {mobileOpen && (
         <div className="lg:hidden border-t border-slate-100 bg-white">
           <div className="px-4 py-3 space-y-1">
-            <Link to="/" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-slate-50 text-sm font-semibold text-slate-700">Resume Builder</Link>
+            <Link to={user ? '/builder' : '/'} onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-slate-50 text-sm font-semibold text-slate-700">Resume Builder</Link>
             {tools.map(t => (
               <Link key={t.path} to={t.path} onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-slate-50 text-sm font-semibold text-slate-700">{t.name}</Link>
             ))}

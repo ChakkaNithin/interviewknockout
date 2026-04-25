@@ -1,18 +1,96 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { mockPricing, mockFaqs } from '../mock';
-import { Check, X, ArrowRight, Sparkles, Shield, Zap, Award, ChevronDown } from 'lucide-react';
+import { Check, X, ArrowRight, Sparkles, Shield, Zap, Award, ChevronDown, Loader2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { paymentsApi } from '../lib/api';
+
+const loadRazorpayScript = () =>
+  new Promise((resolve) => {
+    if (document.getElementById('razorpay-script')) return resolve(true);
+    const s = document.createElement('script');
+    s.id = 'razorpay-script';
+    s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
 
 const Pricing = () => {
+  const { user, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const [billing, setBilling] = useState('monthly');
   const [openFaq, setOpenFaq] = useState(0);
+  const [paying, setPaying] = useState(null); // plan id being paid
+  const [payError, setPayError] = useState('');
+  const [paySuccess, setPaySuccess] = useState('');
 
   const getPrice = (p) => {
     if (p.price === 0) return 0;
     if (billing === 'yearly') return (p.price * 0.6).toFixed(2);
     return p.price;
+  };
+
+  const handleUpgrade = async (plan) => {
+    if (plan.id === 'free') return navigate('/signup');
+    if (!user) return navigate('/signup', { state: { from: { pathname: '/pricing' } } });
+
+    setPayError('');
+    setPaySuccess('');
+    setPaying(plan.id);
+
+    try {
+      const loaded = await loadRazorpayScript();
+      if (!loaded) throw new Error('Failed to load Razorpay. Check your internet connection.');
+
+      const order = await paymentsApi.createOrder(plan.id, billing);
+
+      const options = {
+        key: order.key_id,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'InterviewKnockout',
+        description: `${plan.name} Plan — ${billing === 'yearly' ? 'Annual' : 'Monthly'}`,
+        order_id: order.order_id,
+        prefill: {
+          name: user.name,
+          email: user.email,
+        },
+        theme: { color: '#0F3D2E' },
+        handler: async (response) => {
+          try {
+            const updatedUser = await paymentsApi.verify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              plan: plan.id,
+              billing,
+            });
+            await refreshUser(updatedUser);
+            setPaySuccess(`You're now on the ${plan.name} plan! Enjoy your new features.`);
+          } catch {
+            setPayError('Payment received but verification failed. Please contact support.');
+          } finally {
+            setPaying(null);
+          }
+        },
+        modal: {
+          ondismiss: () => setPaying(null),
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', (resp) => {
+        setPayError(resp.error?.description || 'Payment failed. Please try again.');
+        setPaying(null);
+      });
+      rzp.open();
+    } catch (err) {
+      setPayError(err.message || 'Could not start payment. Please try again.');
+      setPaying(null);
+    }
   };
 
   const comparison = [
@@ -23,8 +101,7 @@ const Pricing = () => {
     { feature: 'AI Content Generation', free: false, pro: true, premium: true },
     { feature: 'JD Tailoring', free: false, pro: true, premium: true },
     { feature: 'Cover Letter Builder', free: false, pro: true, premium: true },
-    { feature: 'JobSpy Integration', free: false, pro: false, premium: true },
-    { feature: 'AI Interview Prep', free: false, pro: false, premium: true },
+    { feature: 'Job Search', free: false, pro: false, premium: true },
     { feature: 'Expert Review', free: false, pro: false, premium: true },
     { feature: 'LinkedIn Optimizer', free: false, pro: false, premium: true },
     { feature: 'Priority Support', free: false, pro: true, premium: true },
@@ -57,6 +134,12 @@ const Pricing = () => {
       {/* Plans */}
       <section className="pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          {payError && (
+            <div className="mb-6 max-w-xl mx-auto px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 text-center">{payError}</div>
+          )}
+          {paySuccess && (
+            <div className="mb-6 max-w-xl mx-auto px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700 text-center">{paySuccess}</div>
+          )}
           <div className="grid md:grid-cols-3 gap-6">
             {mockPricing.map(p => (
               <div key={p.id} className={`relative rounded-3xl p-8 border-2 transition-all hover:-translate-y-1 ${p.highlighted ? 'bg-[#0F3D2E] border-[#0F3D2E] text-white shadow-2xl scale-[1.03]' : 'bg-white border-slate-100 hover:shadow-xl'}`}>
@@ -71,9 +154,14 @@ const Pricing = () => {
                   </div>
                   <p className={`text-sm mt-2 ${p.highlighted ? 'text-white/80' : 'text-slate-600'}`}>{p.description}</p>
                 </div>
-                <Link to="/signup" className={`block text-center py-3 rounded-full font-bold transition-all mb-6 ${p.highlighted ? 'bg-[#FF6B47] hover:bg-[#ff5630] text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}>
-                  {p.cta}
-                </Link>
+                <button
+                  onClick={() => handleUpgrade(p)}
+                  disabled={paying === p.id || (user && user.plan === p.id)}
+                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-full font-bold transition-all mb-6 disabled:opacity-60 disabled:cursor-not-allowed ${p.highlighted ? 'bg-[#FF6B47] hover:bg-[#ff5630] text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}
+                >
+                  {paying === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  {user && user.plan === p.id ? 'Current Plan' : p.cta}
+                </button>
                 <ul className="space-y-2.5">
                   {p.features.map(f => (
                     <li key={f} className="flex items-start gap-2 text-sm">

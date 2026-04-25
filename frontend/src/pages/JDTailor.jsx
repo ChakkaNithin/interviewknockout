@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import { useAuth } from '../context/AuthContext';
 import { mockSampleJD } from '../mock';
 import { jdApi } from '../lib/api';
-import { FileText, Target, Briefcase, Sparkles, ArrowRight, Check, Download, RotateCw, X, Edit3, Zap, Upload } from 'lucide-react';
+import { FileText, Target, Briefcase, Sparkles, ArrowRight, Check, Download, RotateCw, X, Edit3, Zap, Upload, Lock } from 'lucide-react';
 
 function MatchRing({ score, size = 100 }) {
   const r = size / 2 - 6;
@@ -27,6 +29,8 @@ function MatchRing({ score, size = 100 }) {
 const tabs = ['JD Match', 'Changes Made', 'Preview', 'Download'];
 
 const JDTailor = () => {
+  const { user } = useAuth();
+  const isPro = user && (user.plan === 'pro' || user.plan === 'premium');
   const [jd, setJd] = useState('');
   const [tailoring, setTailoring] = useState(false);
   const [tailored, setTailored] = useState(false);
@@ -69,6 +73,43 @@ const JDTailor = () => {
 
   const loadSample = () => setJd(mockSampleJD);
   const reset = () => { setTailored(false); setJd(''); setData(null); setError(''); };
+
+  if (!isPro) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <Navbar />
+        <div className="max-w-2xl mx-auto px-4 py-20 text-center">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-xl p-10">
+            <div className="w-20 h-20 rounded-full bg-[#FFF3EE] flex items-center justify-center mx-auto mb-6">
+              <Lock className="w-9 h-9 text-[#FF6B47]" />
+            </div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFF3EE] text-[#FF6B47] text-xs font-bold uppercase tracking-wider mb-4">
+              Pro Feature
+            </div>
+            <h1 className="text-3xl font-extrabold text-slate-900 mb-3">JD Tailoring</h1>
+            <p className="text-slate-600 mb-2">AI rewrites your resume to match any job description — keywords, skills, tone, and priorities aligned automatically.</p>
+            <p className="text-slate-500 text-sm mb-8">This feature is available on the <span className="font-bold text-[#FF6B47]">Pro plan</span> and above.</p>
+            <div className="grid grid-cols-2 gap-4 mb-8 text-left">
+              {['Keyword alignment', 'Section-by-section rewrites', 'JD match score', 'Download tailored resume'].map(f => (
+                <div key={f} className="flex items-center gap-2 text-sm text-slate-700">
+                  <div className="w-5 h-5 rounded-full bg-[#FFF3EE] flex items-center justify-center flex-shrink-0">
+                    <Check className="w-3 h-3 text-[#FF6B47]" strokeWidth={3} />
+                  </div>
+                  {f}
+                </div>
+              ))}
+            </div>
+            <Link to="/pricing" className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#FF6B47] hover:bg-[#ff5630] text-white rounded-full font-bold shadow-lg shadow-[#FF6B47]/25 transition-all">
+              Upgrade to Pro <ArrowRight className="w-4 h-4" />
+            </Link>
+            <div className="mt-4">
+              <Link to="/dashboard" className="text-sm text-slate-500 hover:text-slate-700 font-medium">← Back to Dashboard</Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">

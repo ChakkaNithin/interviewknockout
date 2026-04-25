@@ -1,6 +1,5 @@
 import os
 import logging
-import asyncio
 from typing import List, Dict, Any, Optional
 import httpx
 
@@ -10,7 +9,7 @@ THEIRSTACK_API_KEY = os.environ.get("THEIRSTACK_API_KEY", "")
 THEIRSTACK_API_URL = "https://api.theirstack.com/v1/jobs/search"
 
 
-def _score_job(job: Dict[str, Any], user_skills: List[str]) -> (int, str):
+def _score_job(job: Dict[str, Any], user_skills: List[str]) -> tuple[int, str]:
     """Compute a match score 0-100 based on user skills vs job description/title."""
     if not user_skills:
         return 70, "GOOD"

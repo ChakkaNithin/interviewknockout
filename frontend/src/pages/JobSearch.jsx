@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import { useAuth } from '../context/AuthContext';
 import { mockJobs } from '../mock';
 import { jobsApi } from '../lib/api';
-import { MapPin, Briefcase, Clock, DollarSign, TrendingUp, Home, Star, Download, ArrowRight, LayoutGrid, List, Search, Check, Loader2, User, Edit3, Mail, Filter, Globe, Calendar, Zap, Users, Plus, X, ChevronDown, Settings } from 'lucide-react';
+import { MapPin, Briefcase, Clock, DollarSign, TrendingUp, Home, Star, Download, ArrowRight, LayoutGrid, List, Search, Check, Loader2, User, Edit3, Mail, Filter, Globe, Calendar, Zap, Users, Plus, X, ChevronDown, Settings, Lock } from 'lucide-react';
 
 const siteCfg = {
   job_board: { color: '#4F8EF7', label: 'Job Board', short: 'J', bg: '#EFF6FF' },
@@ -125,6 +127,7 @@ const Accordion = ({ title, icon: Icon, badge, children, defaultOpen = true }) =
 };
 
 const JobSearch = () => {
+  const { user } = useAuth();
   const [activeMainTab, setActiveMainTab] = useState('configure');
   const [profileEditing, setProfileEditing] = useState(false);
   const [profile, setProfile] = useState(() => {
@@ -138,7 +141,6 @@ const JobSearch = () => {
   });
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [locationInput, setLocationInput] = useState('');
-
   const [siteFilter, setSiteFilter] = useState('all');
   const [expanded, setExpanded] = useState(null);
   const [viewMode, setViewMode] = useState('cards');
@@ -152,6 +154,43 @@ const JobSearch = () => {
   useEffect(() => {
     localStorage.setItem('covera_profile', JSON.stringify(profile));
   }, [profile]);
+
+  if (!user || user.plan !== 'premium') {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <Navbar />
+        <div className="max-w-2xl mx-auto px-4 py-20 text-center">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-xl p-10">
+            <div className="w-20 h-20 rounded-full bg-[#EFF6FF] flex items-center justify-center mx-auto mb-6">
+              <Lock className="w-9 h-9 text-[#4F8EF7]" />
+            </div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EFF6FF] text-[#4F8EF7] text-xs font-bold uppercase tracking-wider mb-4">
+              Premium Feature
+            </div>
+            <h1 className="text-3xl font-extrabold text-slate-900 mb-3">AI-Powered Job Search</h1>
+            <p className="text-slate-600 mb-2">Get matched to jobs that fit your skills, experience, and preferences — powered by real-time search.</p>
+            <p className="text-slate-500 text-sm mb-8">This feature is available on the <span className="font-bold text-[#4F8EF7]">Premium plan</span>.</p>
+            <div className="grid grid-cols-2 gap-4 mb-8 text-left">
+              {['Real-time job scraping', 'AI match scoring', 'Custom filters & alerts', 'Excel/PDF export'].map(f => (
+                <div key={f} className="flex items-center gap-2 text-sm text-slate-700">
+                  <div className="w-5 h-5 rounded-full bg-[#EFF6FF] flex items-center justify-center flex-shrink-0">
+                    <Check className="w-3 h-3 text-[#4F8EF7]" strokeWidth={3} />
+                  </div>
+                  {f}
+                </div>
+              ))}
+            </div>
+            <Link to="/pricing" className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#4F8EF7] hover:bg-[#3b7be0] text-white rounded-full font-bold shadow-lg shadow-[#4F8EF7]/25 transition-all">
+              Upgrade to Premium <ArrowRight className="w-4 h-4" />
+            </Link>
+            <div className="mt-4">
+              <Link to="/dashboard" className="text-sm text-slate-500 hover:text-slate-700 font-medium">← Back to Dashboard</Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const saveProfile = () => setProfileEditing(false);
 
@@ -180,15 +219,15 @@ const JobSearch = () => {
         setIsDemoData(false);
         setActiveMainTab('matches');
       } else {
-        setError('No jobs found. Showing demo results.');
-        setJobs(mockJobs);
-        setIsDemoData(true);
+        setError('No jobs found for this search. Try different keywords or location.');
+        setJobs([]);
+        setIsDemoData(false);
         setActiveMainTab('matches');
       }
     } catch (e) {
-      setError(e.response?.data?.detail || 'Search failed. Showing demo results.');
-      setJobs(mockJobs);
-      setIsDemoData(true);
+      setError(e.response?.data?.detail || 'Job search failed. Please try again.');
+      setJobs([]);
+      setIsDemoData(false);
       setActiveMainTab('matches');
     } finally {
       setLoading(false);

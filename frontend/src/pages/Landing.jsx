@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { mockTemplates, mockStats, mockFeatures, mockTestimonials, mockPricing, mockFaqs, trustedCompanies } from '../mock';
-import { ArrowRight, Star, Check, Sparkles, Target, ShieldCheck, LayoutGrid, SpellCheck, ChevronDown, FileText, Zap, Award, Users, TrendingUp } from 'lucide-react';
+import { ArrowRight, Star, Check, Sparkles, Target, ShieldCheck, LayoutGrid, SpellCheck, ChevronDown, FileText, Zap, Award, Users, TrendingUp, Search } from 'lucide-react';
 
 const iconMap = { SpellCheck, Target, LayoutGrid, ShieldCheck };
 
@@ -21,6 +21,10 @@ const RESUME_DATA = [
       { role: 'Software Engineer', company: 'Meta', period: '2019 — 2022', bullets: ['Built News Feed ranking feature reaching 800M DAU; +12% engagement', 'Owned end-to-end A/B testing infra; cut experiment setup time 70%'] },
       { role: 'Software Engineer', company: 'Stripe', period: '2016 — 2019', bullets: ['Shipped dispute automation saving merchants $85M annually in chargebacks'] },
     ],
+    projects: [
+      { name: 'Distributed Cache Layer', desc: 'Designed Redis-based caching layer across 12 microservices; reduced DB load by 60% and p99 latency from 320ms → 45ms.' },
+      { name: 'Real-time Event Pipeline', desc: 'Built Kafka + Flink streaming pipeline processing 50M events/day; enabled personalization features for 800M users.' },
+    ],
     skills: 'Python · Go · TypeScript · React · Next.js · PostgreSQL · Kafka · Redis · AWS · Kubernetes · Terraform',
     edu: 'B.S. Computer Science · Stanford University, 2016 · GPA 3.9/4.0',
     certs: 'AWS Solutions Architect · Kubernetes CKA · Google Cloud Professional',
@@ -36,6 +40,10 @@ const RESUME_DATA = [
       { role: 'Director of Product', company: 'Airbnb', period: '2021 — Present', bullets: ['Own Hosts product line ($3.2B GMV); grew host supply 40% YoY', 'Built "Host Insights" analytics suite adopted by 2.4M hosts globally', 'Scaled team from 6 to 22 across product, design & data'] },
       { role: 'Senior PM', company: 'Uber', period: '2018 — 2021', bullets: ['Launched Uber Reserve in 38 cities; $420M run-rate in Year 1', 'Reduced driver churn by 18% via data-driven incentive redesign'] },
       { role: 'Product Manager', company: 'Dropbox', period: '2015 — 2018', bullets: ['Shipped Dropbox Paper to 600M users; reached 10M MAU in 14 months'] },
+    ],
+    projects: [
+      { name: 'Host Insights Dashboard', desc: 'Zero-to-one B2B analytics product for 2.4M Airbnb hosts; became top-requested host feature within 6 months of launch.' },
+      { name: 'Uber Reserve Global Rollout', desc: 'Built launch playbook scaled to 38 cities in 4 months; $420M ARR run-rate by end of Year 1.' },
     ],
     skills: 'Product Strategy · Roadmapping · SQL · A/B Testing · User Research · Jira · Amplitude · Figma · OKRs',
     edu: 'MBA · The Wharton School, 2015 · B.S. Economics · UC Berkeley, 2012',
@@ -53,6 +61,10 @@ const RESUME_DATA = [
       { role: 'Senior Designer', company: 'Uber', period: '2019 — 2022', bullets: ['Owned Rider onboarding in 65+ markets; cut drop-off rate 31%', 'Prototyped safety features shipped to 130M+ monthly active users'] },
       { role: 'Product Designer', company: 'Airbnb', period: '2016 — 2019', bullets: ['Designed Experiences launch product; grew bookings 4x in 18 months'] },
     ],
+    projects: [
+      { name: 'Encore Design System', desc: 'Built Spotify\'s unified design system from scratch; adopted by 180+ designers across 40 products, saving ~1,200 design-hours/quarter.' },
+      { name: 'Rider Safety Redesign', desc: 'End-to-end safety UX overhaul at Uber; shipped to 130M+ MAU, reduced safety-incident reports by 22%.' },
+    ],
     skills: 'Figma · Sketch · Framer · Adobe XD · Principle · User Research · Design Systems · Prototyping · HTML/CSS',
     edu: 'BFA Graphic Design · Rhode Island School of Design, 2016',
     certs: 'NN/g UX Certification · IDEO Design Thinking',
@@ -68,6 +80,10 @@ const RESUME_DATA = [
       { role: 'Senior Data Scientist', company: 'Netflix', period: '2021 — Present', bullets: ['Owned Top-10 Rows recommender: +14% watch time for 230M subscribers', 'Shipped causal inference framework adopted across 40+ experiments/yr', 'Lead ML infra migration to Ray, cutting training time from 16h → 2h'] },
       { role: 'Data Scientist', company: 'Lyft', period: '2018 — 2021', bullets: ['Built ETA model: 18% more accurate than incumbent; $31M savings/yr', 'Launched surge-pricing optimization lifting GM by $46M annually'] },
       { role: 'ML Engineer', company: 'Zillow', period: '2016 — 2018', bullets: ['Productionized Zestimate v3: median error 4.5% → 2.1% in 14 months'] },
+    ],
+    projects: [
+      { name: 'Top-10 Rows Recommender', desc: 'Built deep-learning recommendation model serving 230M Netflix subscribers; +14% watch time = ~$200M estimated revenue impact.' },
+      { name: 'Causal Inference Framework', desc: 'Open-sourced internal experimentation toolkit; adopted by 12+ Netflix teams, running 40+ causal studies per year.' },
     ],
     skills: 'Python · PyTorch · TensorFlow · Scikit-learn · Ray · Spark · SQL · Snowflake · Airflow · Kubeflow · dbt',
     edu: 'Ph.D. Statistics · MIT, 2016 · B.S. Mathematics · Caltech, 2011',
@@ -119,6 +135,13 @@ const ResumeThumbnail = ({ template, index }) => {
                 ))}
               </div>
             ))}
+            <div className="font-extrabold text-[5.5px] mb-1 mt-1" style={{ color: template.color }}>KEY PROJECTS</div>
+            {d.projects.map((p, i) => (
+              <div key={i} className="mb-1">
+                <div className="font-bold text-[4.2px] text-slate-900">{p.name}</div>
+                <div className="text-slate-700 text-[3.7px] leading-[1.3]">{p.desc}</div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -147,6 +170,15 @@ const ResumeThumbnail = ({ template, index }) => {
                 {e.bullets.map((b, j) => (
                   <div key={j} className="text-slate-700 text-[3.8px] leading-[1.3] pl-1.5">• {b}</div>
                 ))}
+              </div>
+            ))}
+          </div>
+          <div className="mb-2">
+            <div className="font-extrabold text-[5px] tracking-wider pb-0.5 mb-1 border-b" style={{ color: template.color, borderColor: template.color + '40' }}>KEY PROJECTS</div>
+            {d.projects.map((p, i) => (
+              <div key={i} className="mb-1">
+                <div className="font-bold text-[4px] text-slate-900">{p.name}</div>
+                <div className="text-slate-700 text-[3.7px] leading-[1.3]">{p.desc}</div>
               </div>
             ))}
           </div>
@@ -203,7 +235,14 @@ const ResumeThumbnail = ({ template, index }) => {
               </div>
             ))}
             <div className="mt-1.5 pt-1.5 border-t border-slate-100">
-              <div className="font-extrabold text-[5px] mb-0.5" style={{ color: template.color }}>SKILLS</div>
+              <div className="font-extrabold text-[5px] mb-0.5" style={{ color: template.color }}>KEY PROJECTS</div>
+              {d.projects.map((p, i) => (
+                <div key={i} className="mb-0.5">
+                  <span className="font-bold text-[3.8px] text-slate-900">{p.name}: </span>
+                  <span className="text-slate-700 text-[3.7px] leading-[1.3]">{p.desc}</span>
+                </div>
+              ))}
+              <div className="mt-1 font-extrabold text-[5px] mb-0.5" style={{ color: template.color }}>SKILLS</div>
               <div className="text-slate-700 text-[3.8px] leading-[1.35]">{d.skills}</div>
             </div>
           </div>
@@ -240,6 +279,16 @@ const ResumeThumbnail = ({ template, index }) => {
                 {e.bullets.slice(0, 2).map((b, j) => (
                   <div key={j} className="text-slate-700 text-[3.7px] leading-[1.3]">• {b}</div>
                 ))}
+              </div>
+            ))}
+          </div>
+          <div className="mb-1.5">
+            <div className="font-extrabold text-[5px] mb-0.5" style={{ color: template.color }}>KEY PROJECTS</div>
+            {d.projects.map((p, i) => (
+              <div key={i} className="mb-0.5 pl-2.5 relative">
+                <div className="absolute left-0 top-0.5 w-1.5 h-1.5 rounded-full" style={{ background: template.color }}></div>
+                <div className="font-bold text-[4px] text-slate-900">{p.name}</div>
+                <div className="text-slate-700 text-[3.7px] leading-[1.3]">{p.desc}</div>
               </div>
             ))}
           </div>
@@ -358,54 +407,56 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Templates */}
-      <section className="py-20 bg-gradient-to-b from-white to-slate-50" id="templates">
+      {/* Roadmap */}
+      <section className="py-24 bg-gradient-to-b from-white to-[#F8FBF9]" id="roadmap">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFF3EE] text-[#FF6B47] text-xs font-bold uppercase tracking-wider mb-4">
-              <Sparkles className="w-3.5 h-3.5" /> Templates
+          <div className="text-center mb-16 max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F5F0] text-[#0D6B4F] text-xs font-bold uppercase tracking-wider mb-4">
+              <TrendingUp className="w-3.5 h-3.5" /> Your Success Roadmap
             </div>
             <h2 className="text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">
-              Pick a template and build your resume in minutes
+              From resume to job offer — step by step
             </h2>
-            <p className="text-lg text-slate-600">
-              ATS-friendly, professionally designed resumes with customizable sections, fonts, colors, and layouts.
-            </p>
+            <p className="text-lg text-slate-600">InterviewKnockout guides you through every stage of the job search journey.</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {mockTemplates.slice(0,8).map((t, i) => (
-              <Link key={t.id} to="/signup" className="group cursor-pointer">
-                <ResumeThumbnail template={t} index={i} />
-                <div className="mt-3 flex items-center justify-between">
-                  <div className="font-bold text-slate-900">{t.name}</div>
-                  <div className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{t.tag}</div>
-                </div>
-              </Link>
-            ))}
+          <div className="relative">
+            {/* Connecting line desktop */}
+            <div className="hidden lg:block absolute top-[52px] left-[10%] right-[10%] h-0.5 bg-gradient-to-r from-[#0D6B4F] via-[#FF6B47] to-[#F59E0B] z-0"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-4 relative z-10">
+              {[
+                { step: '01', icon: Target, color: '#0D6B4F', bg: '#E8F5F0', border: '#BBE8D8', title: 'ATS Score', sub: 'Free', desc: 'Upload your resume and instantly see your ATS compatibility score, strengths, and gaps.', cta: 'Get Score', href: '/ats-checker' },
+                { step: '02', icon: FileText, color: '#FF6B47', bg: '#FFF3EE', border: '#FECACA', title: 'Tailor to JD', sub: 'Pro', desc: 'Paste any job description. AI rewrites your summary, skills, and bullets to match perfectly.', cta: 'Tailor Now', href: '/jd-tailor' },
+                { step: '03', icon: Search, color: '#4F8EF7', bg: '#EFF6FF', border: '#BFDBFE', title: 'Find Jobs', sub: 'Premium', desc: 'Search thousands of live roles matched to your skills, salary, and location preferences.', cta: 'Search Jobs', href: '/jobs' },
+                { step: '04', icon: Award, color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A', title: 'Get Placed', sub: 'Goal', desc: 'Land the offer. Track applications, compare packages, and negotiate with confidence.', cta: 'Start Now', href: '/signup' },
+              ].map((s, i) => {
+                const Icon = s.icon;
+                return (
+                  <div key={i} className="flex flex-col items-center text-center group">
+                    {/* Step circle */}
+                    <div className="relative mb-5">
+                      <div className="w-24 h-24 rounded-full border-4 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300" style={{ background: s.bg, borderColor: s.border }}>
+                        <Icon className="w-9 h-9" style={{ color: s.color }} strokeWidth={2} />
+                      </div>
+                      <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-md" style={{ background: s.color }}>{s.step}</div>
+                    </div>
+                    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider mb-2" style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>{s.sub}</div>
+                    <h3 className="text-lg font-extrabold text-slate-900 mb-2">{s.title}</h3>
+                    <p className="text-sm text-slate-500 leading-relaxed mb-4 px-2">{s.desc}</p>
+                    {s.href !== '#' ? (
+                      <Link to={s.href} className="inline-flex items-center gap-1 text-xs font-bold px-4 py-1.5 rounded-full transition-all hover:shadow-md" style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
+                        {s.cta} <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs font-bold px-4 py-1.5 rounded-full bg-slate-100 text-slate-400">{s.cta}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <div className="text-center mt-12">
-            <Link to="/signup" className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-full font-bold transition-colors">
-              Browse All Templates <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="py-16 bg-[#0F3D2E] relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,107,71,0.15),transparent_50%)]"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl lg:text-4xl font-extrabold text-white mb-3">Chosen by 10 million job applicants worldwide</h2>
-            <p className="text-white/70 max-w-2xl mx-auto">InterviewKnockout is a modern resume builder helping job seekers at every step with ATS-friendly templates and AI-powered tools.</p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {mockStats.map(s => (
-              <div key={s.label} className="text-center">
-                <div className="text-4xl lg:text-5xl font-extrabold text-[#FF6B47] mb-1">{s.value}</div>
-                <div className="text-sm text-white/80">{s.label}</div>
-              </div>
-            ))}
+          {/* Mobile connecting dots */}
+          <div className="flex justify-center mt-10 gap-2 lg:hidden">
+            {[0,1,2,3].map(i => <div key={i} className={`h-1.5 rounded-full ${i === 0 ? 'w-6 bg-[#0D6B4F]' : 'w-3 bg-slate-200'}`}></div>)}
           </div>
         </div>
       </section>
@@ -464,6 +515,58 @@ const Landing = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Templates */}
+      <section className="py-20 bg-gradient-to-b from-white to-slate-50" id="templates">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12 max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFF3EE] text-[#FF6B47] text-xs font-bold uppercase tracking-wider mb-4">
+              <Sparkles className="w-3.5 h-3.5" /> Templates
+            </div>
+            <h2 className="text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">
+              Pick a template and build your resume in minutes
+            </h2>
+            <p className="text-lg text-slate-600">
+              ATS-friendly, professionally designed resumes with customizable sections, fonts, colors, and layouts.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {mockTemplates.slice(0,8).map((t, i) => (
+              <Link key={t.id} to="/signup" className="group cursor-pointer">
+                <ResumeThumbnail template={t} index={i} />
+                <div className="mt-3 flex items-center justify-between">
+                  <div className="font-bold text-slate-900">{t.name}</div>
+                  <div className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{t.tag}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+          <div className="text-center mt-12">
+            <Link to="/signup" className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-full font-bold transition-colors">
+              Browse All Templates <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats */}
+      <section className="py-16 bg-[#0F3D2E] relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,107,71,0.15),transparent_50%)]"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl lg:text-4xl font-extrabold text-white mb-3">Chosen by 10 million job applicants worldwide</h2>
+            <p className="text-white/70 max-w-2xl mx-auto">InterviewKnockout is a modern resume builder helping job seekers at every step with ATS-friendly templates and AI-powered tools.</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {mockStats.map(s => (
+              <div key={s.label} className="text-center">
+                <div className="text-4xl lg:text-5xl font-extrabold text-[#FF6B47] mb-1">{s.value}</div>
+                <div className="text-sm text-white/80">{s.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>

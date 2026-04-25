@@ -3,50 +3,52 @@ import json
 import re
 import logging
 from typing import Dict, Any, List
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-MODEL_NAME = "gemini-2.0-flash-exp"
+MODEL_NAME = "gemini-2.5-flash"
 
-# Configure Gemini
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 
 def _extract_json(text: str) -> Dict[str, Any]:
-    """Extract JSON from LLM response (handles code blocks and trailing text)."""
-    # Remove code fences
     text = re.sub(r"```json\s*", "", text)
     text = re.sub(r"```\s*", "", text)
-    # Find first { ... last }
-    start = text.find("{")
-    end = text.rfind("}")
-    if start == -1 or end == -1:
-        raise ValueError("No JSON object found in response")
-    snippet = text[start:end + 1]
-    return json.loads(snippet)
+    decoder = json.JSONDecoder()
+    idx = 0
+    while idx < len(text):
+        idx = text.find("{", idx)
+        if idx == -1:
+            break
+        try:
+            obj, _ = decoder.raw_decode(text, idx)
+            return obj
+        except json.JSONDecodeError:
+            idx += 1
+    raise ValueError("No JSON object found in response")
 
 
 async def _chat(session_id: str, system: str, user_text: str, max_tokens: int = 4000) -> str:
-    """Send a chat request to Gemini API."""
+    if not _client:
+        raise RuntimeError("Gemini API key not configured")
     try:
-        model = genai.GenerativeModel(
-            model_name=MODEL_NAME,
-            generation_config={
-                "temperature": 0.7,
-                "top_p": 0.95,
-                "top_k": 40,
-                "max_output_tokens": max_tokens,
-            },
-            system_instruction=system
+        response = await _client.aio.models.generate_content(
+            model=MODEL_NAME,
+            contents=user_text,
+            config=types.GenerateContentConfig(
+                system_instruction=system,
+                temperature=0.7,
+                top_p=0.95,
+                top_k=40,
+                max_output_tokens=max_tokens,
+            ),
         )
-        
-        response = model.generate_content(user_text)
         return response.text
     except Exception as e:
-        logger.exception(f"Gemini API call failed: {e}")
+        logger.exception("Gemini API call failed")
         raise
 
 

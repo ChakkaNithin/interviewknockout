@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import { useAuth } from '../context/AuthContext';
 import { atsApi } from '../lib/api';
-import { Upload, FileText, CheckCircle2, XCircle, AlertTriangle, Sparkles, Download, RotateCw, ArrowRight, Target, Zap, TrendingUp, Check, X } from 'lucide-react';
+import { Upload, FileText, CheckCircle2, XCircle, AlertTriangle, Sparkles, Download, RotateCw, ArrowRight, Target, Zap, TrendingUp, Check, X, Lock } from 'lucide-react';
 
 function CircleScore({ score, size = 120 }) {
   const r = size / 2 - 8;
@@ -23,16 +25,17 @@ function CircleScore({ score, size = 120 }) {
   );
 }
 
-const tabs = ['Score', 'Pros & Cons', 'Fixes', 'Download'];
+const tabs = ['Score', 'Pros & Cons', 'Fixes'];
 
 const ATSChecker = () => {
+  const { user } = useAuth();
+  const isPro = user && (user.plan === 'pro' || user.plan === 'premium');
   const [file, setFile] = useState(null);
   const [fileObj, setFileObj] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
-  const [generating, setGenerating] = useState(false);
-  const [generated, setGenerated] = useState(false);
+
   const [dragging, setDragging] = useState(false);
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -66,18 +69,8 @@ const ATSChecker = () => {
     }
   };
 
-  const handleGenerate = () => {
-    setGenerating(true);
-    setTimeout(() => {
-      setGenerating(false);
-      setGenerated(true);
-      setActiveTab(3);
-    }, 2200);
-  };
-
   const reset = () => {
     setAnalyzed(false);
-    setGenerated(false);
     setFile(null);
     setFileObj(null);
     setData(null);
@@ -293,38 +286,23 @@ const ATSChecker = () => {
                       );
                     })}
                   </div>
-                  <div className="p-5 rounded-2xl bg-gradient-to-br from-[#0F3D2E] to-[#14543F] text-white mb-4">
-                    <div className="text-xs font-bold text-[#FF6B47] mb-1">🤖 AI will auto-apply all fixes</div>
-                    <div className="text-xs text-white/80">Projected score after improvements</div>
-                    <div className="text-3xl font-extrabold mt-1">{data.score} → {Math.min(100, data.score + 20)}+</div>
-                  </div>
-                  <button onClick={handleGenerate} disabled={generating} className="w-full py-3 rounded-xl bg-[#FF6B47] hover:bg-[#ff5630] disabled:opacity-60 text-white font-bold flex items-center justify-center gap-2">
-                    {generating ? 'Generating improved resume...' : (<><Sparkles className="w-4 h-4" /> Generate ATS-Improved Resume</>)}
-                  </button>
-                </div>
-              )}
-
-              {activeTab === 3 && (
-                <div className="text-center">
-                  <div className="w-16 h-16 rounded-full bg-[#E8F5F0] mx-auto mb-4 flex items-center justify-center">
-                    <CheckCircle2 className="w-9 h-9 text-[#0D6B4F]" />
-                  </div>
-                  <h3 className="text-xl font-extrabold text-slate-900 mb-2">Your ATS Resume is Ready!</h3>
-                  <p className="text-sm text-slate-600 mb-5">All 8 fixes applied. Score improved from <span className="font-bold text-slate-900">63</span> to <span className="font-bold text-[#0D6B4F]">88</span></p>
-                  <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto mb-5">
-                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
-                      <div className="text-3xl font-extrabold text-amber-600">63</div>
-                      <div className="text-[10px] font-bold text-amber-700 uppercase">Before</div>
+                  {isPro ? (
+                    <div className="p-4 rounded-2xl bg-[#E8F5F0] border border-[#BBE8D8] text-center">
+                      <div className="text-sm font-semibold text-[#0F3D2E]">Apply these fixes in the Resume Builder</div>
+                      <a href="/builder" className="mt-2 inline-block text-xs font-bold text-[#FF6B47] hover:underline">Open Resume Builder →</a>
                     </div>
-                    <div className="p-3 rounded-xl bg-[#E8F5F0] border border-[#BBE8D8]">
-                      <div className="text-3xl font-extrabold text-[#0D6B4F]">88</div>
-                      <div className="text-[10px] font-bold text-[#0D6B4F] uppercase">After</div>
+                  ) : (
+                    <div className="p-5 rounded-2xl border-2 border-dashed border-[#FF6B47]/30 bg-[#FFF3EE]/50 text-center">
+                      <div className="w-10 h-10 rounded-full bg-[#FFF3EE] flex items-center justify-center mx-auto mb-3">
+                        <Lock className="w-5 h-5 text-[#FF6B47]" />
+                      </div>
+                      <div className="font-bold text-slate-900 text-sm mb-1">Auto-Fix Requires Pro</div>
+                      <p className="text-xs text-slate-500 mb-3">You can see all issues above — upgrade to Pro to auto-apply fixes to your resume with one click.</p>
+                      <Link to="/pricing" className="inline-flex items-center gap-1.5 px-5 py-2 bg-[#FF6B47] hover:bg-[#ff5630] text-white text-xs font-bold rounded-full transition-all">
+                        Upgrade to Pro <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
                     </div>
-                  </div>
-                  <button className="w-full py-3 rounded-xl bg-[#FF6B47] hover:bg-[#ff5630] text-white font-bold flex items-center justify-center gap-2 mb-2">
-                    <Download className="w-4 h-4" /> Download ATS Resume (.docx)
-                  </button>
-                  <a href="/jd-tailor" className="text-sm text-[#0F3D2E] font-semibold hover:underline">Next → Add Job Description for tailored resume</a>
+                  )}
                 </div>
               )}
             </div>

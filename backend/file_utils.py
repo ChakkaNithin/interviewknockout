@@ -6,25 +6,25 @@ logger = logging.getLogger(__name__)
 
 
 async def extract_text_from_upload(file: UploadFile) -> str:
-    """Extract text from an uploaded PDF or DOCX file."""
     content = await file.read()
-    name = (file.filename or "").lower()
+    return extract_text_from_bytes(content, file.filename or "")
+
+
+def extract_text_from_bytes(content: bytes, filename: str) -> str:
+    name = filename.lower()
     if name.endswith(".pdf"):
         return _extract_pdf(content)
     if name.endswith(".docx") or name.endswith(".doc"):
         return _extract_docx(content)
     if name.endswith(".txt"):
-        try:
-            return content.decode("utf-8", errors="ignore")
-        except Exception:
-            return ""
+        return content.decode("utf-8", errors="ignore")
     raise HTTPException(status_code=400, detail="Unsupported file type. Use .pdf, .docx or .txt")
 
 
 def _extract_pdf(content: bytes) -> str:
     try:
-        import PyPDF2
-        reader = PyPDF2.PdfReader(io.BytesIO(content))
+        from pypdf import PdfReader
+        reader = PdfReader(io.BytesIO(content))
         text_parts = []
         for page in reader.pages:
             try:
@@ -34,7 +34,7 @@ def _extract_pdf(content: bytes) -> str:
         return "\n".join(text_parts).strip()
     except Exception as e:
         logger.exception("PDF extraction failed")
-        raise HTTPException(status_code=400, detail=f"Failed to read PDF: {e}")
+        raise HTTPException(status_code=400, detail="Failed to read PDF")
 
 
 def _extract_docx(content: bytes) -> str:

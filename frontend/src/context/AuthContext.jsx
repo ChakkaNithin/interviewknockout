@@ -76,8 +76,13 @@ export const AuthProvider = ({ children }) => {
     return u;
   };
 
+  const refreshUser = async (updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem('ik_user', JSON.stringify(updatedUser));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, loginWithGoogle, logout, updatePlan }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, loginWithGoogle, logout, updatePlan, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FileText, Mail, Lock, User, Eye, EyeOff, ArrowRight, Check } from 'lucide-react';
@@ -14,18 +14,57 @@ const Auth = ({ mode = 'login' }) => {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [googleReady, setGoogleReady] = useState(false);
+  const googleInitialized = useRef(false);
 
-  // Load Google Identity Services script
+  const handleGoogleCallback = useCallback(async (response) => {
+    setLoading(true);
+    setError('');
+    try {
+      await loginWithGoogle(response.credential);
+      navigate(from);
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message || 'Google login failed');
+    } finally {
+      setLoading(false);
+    }
+  }, [loginWithGoogle, navigate, from]);
+
+  const setupGoogle = useCallback(() => {
+    if (googleInitialized.current || !window.google) return;
+    googleInitialized.current = true;
+    window.google.accounts.id.initialize({
+      client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID,
+      callback: handleGoogleCallback,
+      cancel_on_tap_outside: false,
+    });
+    setGoogleReady(true);
+  }, [handleGoogleCallback]);
+
   useEffect(() => {
+    // If script already loaded (e.g. navigating back to auth page)
+    if (window.google) { setupGoogle(); return; }
+
+    // Avoid injecting the script twice
+    if (document.getElementById('gsi-script')) {
+      document.getElementById('gsi-script').addEventListener('load', setupGoogle);
+      return;
+    }
+
     const script = document.createElement('script');
+    script.id = 'gsi-script';
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
     script.defer = true;
+    script.onload = setupGoogle;
     document.body.appendChild(script);
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
+  }, [setupGoogle]);
+
+  // Re-initialize when callback changes (e.g. `from` path changes)
+  useEffect(() => {
+    googleInitialized.current = false;
+    if (window.google) setupGoogle();
+  }, [from, setupGoogle]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -50,37 +89,28 @@ const Auth = ({ mode = 'login' }) => {
     }
   };
 
-  const handleGoogle = async () => {
-    setError('Google Sign-In requires a Google Client ID to be configured. Please contact support or use email/password login.');
-    // To enable Google login:
-    // 1. Get Google OAuth Client ID from https://console.cloud.google.com/
-    // 2. Add REACT_APP_GOOGLE_CLIENT_ID to frontend/.env
-    // 3. Uncomment the code below and remove this error message
-    
-    /* 
+  const handleGoogle = () => {
     if (!window.google) {
-      setError('Google Sign-In is loading. Please try again in a moment.');
+      setError('Google Sign-In is still loading. Please try again in a moment.');
       return;
     }
-    
-    window.google.accounts.id.initialize({
-      client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID,
-      callback: async (response) => {
-        setLoading(true);
-        setError('');
-        try {
-          await loginWithGoogle(response.credential);
-          navigate(from);
-        } catch (err) {
-          setError(err.response?.data?.detail || err.message || 'Google login failed');
-        } finally {
-          setLoading(false);
-        }
+    // Re-initialize to ensure the latest callback (with correct `from`) is used
+    googleInitialized.current = false;
+    setupGoogle();
+
+    window.google.accounts.id.prompt((notification) => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        // One Tap suppressed — open Google OAuth popup as fallback
+        const params = new URLSearchParams({
+          client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID,
+          redirect_uri: `${window.location.origin}/login`,
+          response_type: 'token',
+          scope: 'openid email profile',
+          prompt: 'select_account',
+        });
+        setError('Please enable popups for this site, or use email/password login.');
       }
     });
-    
-    window.google.accounts.id.prompt();
-    */
   };
 
   const benefits = [

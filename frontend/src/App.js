@@ -23,6 +23,7 @@ function App() {
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/builder" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
+          <Route path="/builder/:id" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
           <Route path="/ats-checker" element={<ProtectedRoute><ATSChecker /></ProtectedRoute>} />
           <Route path="/jd-tailor" element={<ProtectedRoute><JDTailor /></ProtectedRoute>} />
           <Route path="/jobs" element={<ProtectedRoute><JobSearch /></ProtectedRoute>} />

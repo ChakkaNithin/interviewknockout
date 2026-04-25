@@ -7,7 +7,7 @@ const Footer = () => {
     {
       title: 'Product',
       links: [
-        { label: 'Resume Builder', to: '/' },
+        { label: 'Resume Builder', to: '/builder' },
         { label: 'ATS Checker', to: '/ats-checker' },
         { label: 'JD Tailor', to: '/jd-tailor' },
         { label: 'Job Search', to: '/jobs' },
@@ -15,32 +15,12 @@ const Footer = () => {
       ],
     },
     {
-      title: 'Resources',
+      title: 'Quick Links',
       links: [
-        { label: 'Resume Examples', to: '/' },
-        { label: 'Cover Letter Templates', to: '/' },
-        { label: 'Career Blog', to: '/' },
-        { label: 'Interview Prep', to: '/' },
-        { label: 'Help Center', to: '/' },
-      ],
-    },
-    {
-      title: 'Company',
-      links: [
-        { label: 'About Us', to: '/' },
-        { label: 'Careers', to: '/' },
-        { label: 'Press Kit', to: '/' },
-        { label: 'Contact', to: '/' },
-        { label: 'Reviews', to: '/' },
-      ],
-    },
-    {
-      title: 'Legal',
-      links: [
-        { label: 'Privacy Policy', to: '/' },
-        { label: 'Terms of Service', to: '/' },
-        { label: 'GDPR', to: '/' },
-        { label: 'Cookie Policy', to: '/' },
+        { label: 'Resume Templates', to: '/#templates' },
+        { label: 'Features', to: '/#features' },
+        { label: 'Reviews', to: '/#reviews' },
+        { label: 'FAQ', to: '/pricing' },
       ],
     },
   ];
@@ -48,7 +28,7 @@ const Footer = () => {
   return (
     <footer className="bg-[#0F3D2E] text-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-8 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           <div className="col-span-2 md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-9 h-9 rounded-xl bg-[#FF6B47] flex items-center justify-center">
@@ -73,9 +53,15 @@ const Footer = () => {
               <ul className="space-y-2.5">
                 {col.links.map((link) => (
                   <li key={link.label}>
-                    <Link to={link.to} className="text-sm text-slate-300 hover:text-[#FF6B47] transition-colors">
-                      {link.label}
-                    </Link>
+                    {link.to.startsWith('/#') ? (
+                      <a href={link.to} className="text-sm text-slate-300 hover:text-[#FF6B47] transition-colors">
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link to={link.to} className="text-sm text-slate-300 hover:text-[#FF6B47] transition-colors">
+                        {link.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
