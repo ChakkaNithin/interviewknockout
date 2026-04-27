@@ -38,6 +38,10 @@ class UserPublic(BaseModel):
     plan: str = "free"
     avatar: Optional[str] = None
     provider: str = "email"
+    phone: Optional[str] = None
+    location: Optional[str] = None
+    linkedin: Optional[str] = None
+    github: Optional[str] = None
     created_at: datetime
 
 
@@ -76,15 +80,29 @@ class Education(BaseModel):
     cgpa: str = ""
 
 
+class Certification(BaseModel):
+    id: str = Field(default_factory=uid)
+    name: str = ""
+    issuer: str = ""
+    date: str = ""
+
+
+class CustomSection(BaseModel):
+    id: str = Field(default_factory=uid)
+    name: str = ""
+    content: str = ""
+
+
 class ResumeData(BaseModel):
     personal: PersonalInfo = Field(default_factory=PersonalInfo)
     summary: str = ""
     experiences: List[Experience] = Field(default_factory=list)
     education: List[Education] = Field(default_factory=list)
     skills: List[str] = Field(default_factory=list)
-    certifications: List[str] = Field(default_factory=list)
+    certifications: List[Certification] = Field(default_factory=list)
     languages: List[Dict[str, str]] = Field(default_factory=list)
     projects: List[Dict[str, Any]] = Field(default_factory=list)
+    customSections: List[CustomSection] = Field(default_factory=list)
 
 
 class ResumeCreate(BaseModel):

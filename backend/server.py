@@ -1,9 +1,15 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Form, Request
+from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo.errors import PyMongoError
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import os
+import io
 import json
 import hmac
 import hashlib
@@ -11,9 +17,12 @@ import logging
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import List, Optional
+from docx import Document
+from docx.shared import Pt, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+load_dotenv(ROOT_DIR / '.env', override=True)
 
 from models import (
     UserSignup, UserLogin, GoogleAuthRequest, UserPublic, AuthResponse,
@@ -31,34 +40,78 @@ import jobs_service
 from file_utils import extract_text_from_upload, extract_text_from_bytes
 
 mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-client = AsyncIOMotorClient(mongo_url)
+client = AsyncIOMotorClient(mongo_url, serverSelectionTimeoutMS=5000)
 db = client[os.environ.get('DB_NAME', 'interviewknockout')]
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB
+DEVELOPER_EMAILS = {"nithinnani1311@gmail.com"}
+
+limiter = Limiter(key_func=get_remote_address)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await db.users.create_index("email", unique=True)
-    await db.resumes.create_index([("user_id", 1), ("updated_at", -1)])
+    app.state.db_ready = False
+    try:
+        await db.users.create_index("email", unique=True)
+        await db.resumes.create_index([("user_id", 1), ("updated_at", -1)])
+        app.state.db_ready = True
+        logger.info("Database connection ready")
+    except Exception:
+        logger.exception("Database initialization failed; API will stay up but database-backed routes may return 503")
     yield
     client.close()
 
 
 app = FastAPI(title="InterviewKnockout API", version="1.0.0", lifespan=lifespan)
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(","),
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
 )
 
 api_router = APIRouter(prefix="/api")
+
+
+def ensure_db_available() -> None:
+    if not getattr(app.state, "db_ready", False):
+        raise HTTPException(
+            status_code=503,
+            detail="Database is unavailable right now. Please try again in a moment.",
+        )
+
+
+def is_temporary_ai_error(error: Exception) -> bool:
+    msg = str(error).lower()
+    return any(
+        marker in msg
+        for marker in (
+            "503",
+            "unavailable",
+            "high demand",
+            "429",
+            "resource_exhausted",
+            "quota",
+            "rate limit",
+            "empty response",
+        )
+    )
+
+
+def effective_plan_for_user(u: dict) -> str:
+    email = (u.get("email") or "").lower()
+    if email in DEVELOPER_EMAILS:
+        return "premium"
+    return u.get("plan", "free")
 
 
 def user_to_public(u: dict) -> UserPublic:
@@ -66,9 +119,13 @@ def user_to_public(u: dict) -> UserPublic:
         id=u["id"],
         email=u["email"],
         name=u["name"],
-        plan=u.get("plan", "free"),
+        plan=effective_plan_for_user(u),
         avatar=u.get("avatar"),
         provider=u.get("provider", "email"),
+        phone=u.get("phone"),
+        location=u.get("location"),
+        linkedin=u.get("linkedin"),
+        github=u.get("github"),
         created_at=u.get("created_at", datetime.now(timezone.utc)),
     )
 
@@ -80,17 +137,23 @@ async def root():
 
 @api_router.get("/health")
 async def health():
+    if not getattr(app.state, "db_ready", False):
+        return {"status": "unhealthy", "error": "Database unreachable"}
     try:
         await db.command("ping")
+        app.state.db_ready = True
         return {"status": "healthy", "db": "connected"}
-    except Exception as e:
+    except Exception:
+        app.state.db_ready = False
         logger.exception("Health check failed")
         return {"status": "unhealthy", "error": "Database unreachable"}
 
 
 # ========== Auth ==========
 @api_router.post("/auth/signup", response_model=AuthResponse)
-async def signup(payload: UserSignup):
+@limiter.limit("5/minute")
+async def signup(request: Request, payload: UserSignup):
+    ensure_db_available()
     existing = await db.users.find_one({"email": payload.email.lower()})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -107,14 +170,16 @@ async def signup(payload: UserSignup):
     }
     try:
         await db.users.insert_one(doc)
-    except Exception:
+    except PyMongoError:
         raise HTTPException(status_code=400, detail="Email already registered")
     token = create_access_token(user_id)
     return AuthResponse(user=user_to_public(doc), token=token)
 
 
 @api_router.post("/auth/login", response_model=AuthResponse)
-async def login(payload: UserLogin):
+@limiter.limit("10/minute")
+async def login(request: Request, payload: UserLogin):
+    ensure_db_available()
     u = await db.users.find_one({"email": payload.email.lower()})
     if not u or not verify_password(payload.password, u.get("password_hash", "")):
         raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -123,7 +188,9 @@ async def login(payload: UserLogin):
 
 
 @api_router.post("/auth/google", response_model=AuthResponse)
-async def google_auth(payload: GoogleAuthRequest):
+@limiter.limit("10/minute")
+async def google_auth(request: Request, payload: GoogleAuthRequest):
+    ensure_db_available()
     import asyncio
     from google.oauth2 import id_token as google_id_token
     from google.auth.transport import requests as google_requests
@@ -188,6 +255,7 @@ async def google_auth(payload: GoogleAuthRequest):
 
 @api_router.get("/auth/me", response_model=UserPublic)
 async def me(user_id: str = Depends(get_current_user_id)):
+    ensure_db_available()
     u = await db.users.find_one({"id": user_id})
     if not u:
         raise HTTPException(status_code=404, detail="User not found")
@@ -196,6 +264,7 @@ async def me(user_id: str = Depends(get_current_user_id)):
 
 @api_router.patch("/auth/me/plan")
 async def update_plan(plan: str, user_id: str = Depends(get_current_user_id)):
+    ensure_db_available()
     if plan not in ("free",):
         # Paid plan upgrades require payment verification via Stripe webhook — not self-service
         raise HTTPException(status_code=402, detail="Plan upgrade requires payment")
@@ -207,6 +276,7 @@ async def update_plan(plan: str, user_id: str = Depends(get_current_user_id)):
 # ========== Resumes ==========
 @api_router.get("/resumes", response_model=List[Resume])
 async def list_resumes(user_id: str = Depends(get_current_user_id)):
+    ensure_db_available()
     cursor = db.resumes.find({"user_id": user_id}).sort("updated_at", -1)
     items = await cursor.to_list(200)
     result = []
@@ -218,6 +288,7 @@ async def list_resumes(user_id: str = Depends(get_current_user_id)):
 
 @api_router.post("/resumes", response_model=Resume)
 async def create_resume(payload: ResumeCreate, user_id: str = Depends(get_current_user_id)):
+    ensure_db_available()
     r = Resume(
         user_id=user_id,
         title=payload.title,
@@ -231,6 +302,7 @@ async def create_resume(payload: ResumeCreate, user_id: str = Depends(get_curren
 
 @api_router.get("/resumes/{resume_id}", response_model=Resume)
 async def get_resume(resume_id: str, user_id: str = Depends(get_current_user_id)):
+    ensure_db_available()
     r = await db.resumes.find_one({"id": resume_id, "user_id": user_id})
     if not r:
         raise HTTPException(status_code=404, detail="Resume not found")
@@ -240,6 +312,7 @@ async def get_resume(resume_id: str, user_id: str = Depends(get_current_user_id)
 
 @api_router.put("/resumes/{resume_id}", response_model=Resume)
 async def update_resume(resume_id: str, payload: ResumeUpdate, user_id: str = Depends(get_current_user_id)):
+    ensure_db_available()
     update = {k: v for k, v in payload.dict(exclude_none=True).items()}
     update["updated_at"] = datetime.now(timezone.utc)
     result = await db.resumes.update_one({"id": resume_id, "user_id": user_id}, {"$set": update})
@@ -252,6 +325,7 @@ async def update_resume(resume_id: str, payload: ResumeUpdate, user_id: str = De
 
 @api_router.delete("/resumes/{resume_id}")
 async def delete_resume(resume_id: str, user_id: str = Depends(get_current_user_id)):
+    ensure_db_available()
     result = await db.resumes.delete_one({"id": resume_id, "user_id": user_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Resume not found")
@@ -260,17 +334,22 @@ async def delete_resume(resume_id: str, user_id: str = Depends(get_current_user_
 
 # ========== ATS Analysis ==========
 @api_router.post("/ats/analyze")
-async def ats_analyze_text(payload: ATSAnalyzeRequest, user_id: str = Depends(get_current_user_id)):
+@limiter.limit("20/minute")
+async def ats_analyze_text(request: Request, payload: ATSAnalyzeRequest, user_id: str = Depends(get_current_user_id)):
     try:
         result = await ai_service.analyze_ats(payload.resume_text, payload.target_role or "")
         return result
-    except Exception:
+    except Exception as e:
         logger.exception("ATS analysis failed")
-        raise HTTPException(status_code=500, detail="ATS analysis failed. Please try again.")
+        if is_temporary_ai_error(e):
+            raise HTTPException(status_code=503, detail="AI service is temporarily unavailable. Please try again in a moment.")
+        raise HTTPException(status_code=500, detail="Analysis failed. Please try again.")
 
 
 @api_router.post("/ats/analyze-file")
+@limiter.limit("20/minute")
 async def ats_analyze_file(
+    request: Request,
     file: UploadFile = File(...),
     target_role: Optional[str] = Form(None),
     user_id: str = Depends(get_current_user_id),
@@ -287,28 +366,57 @@ async def ats_analyze_file(
         result = await ai_service.analyze_ats(text, target_role or "")
         result["filename"] = file.filename
         result["extracted_chars"] = len(text)
+        result["original_resume_text"] = text
         return result
-    except Exception:
+    except Exception as e:
         logger.exception("ATS analysis failed")
-        raise HTTPException(status_code=500, detail="ATS analysis failed. Please try again.")
+        if is_temporary_ai_error(e):
+            raise HTTPException(status_code=503, detail="AI service is temporarily unavailable. Please try again in a moment.")
+        raise HTTPException(status_code=500, detail="Analysis failed. Please try again.")
+
+
+# ========== ATS Apply Fixes ==========
+@api_router.post("/ats/apply-fixes")
+@limiter.limit("10/minute")
+async def ats_apply_fixes(request: Request, payload: dict, user_id: str = Depends(get_current_user_id)):
+    resume_text = payload.get("resume_text", "")
+    fixes = payload.get("fixes", [])
+    target_role = payload.get("target_role", "")
+    if len(resume_text.strip()) < 100:
+        raise HTTPException(status_code=400, detail="Resume text is too short.")
+    if not fixes:
+        raise HTTPException(status_code=400, detail="No fixes provided.")
+    try:
+        result = await ai_service.apply_ats_fixes(resume_text, fixes, target_role)
+        return result
+    except Exception as e:
+        logger.exception("Apply ATS fixes failed")
+        if is_temporary_ai_error(e):
+            raise HTTPException(status_code=503, detail="AI service is temporarily unavailable. Please try again in a moment.")
+        raise HTTPException(status_code=500, detail="Failed to apply fixes. Please try again.")
 
 
 # ========== JD Tailor ==========
 @api_router.post("/jd/tailor")
-async def jd_tailor(payload: JDTailorRequest, user_id: str = Depends(get_current_user_id)):
+@limiter.limit("20/minute")
+async def jd_tailor(request: Request, payload: JDTailorRequest, user_id: str = Depends(get_current_user_id)):
     if len(payload.jd_text.strip()) < 50:
         raise HTTPException(status_code=400, detail="JD must be at least 50 characters")
     if len(payload.resume_text.strip()) < 100:
         raise HTTPException(status_code=400, detail="Resume text must be at least 100 characters")
     try:
         return await ai_service.tailor_to_jd(payload.resume_text, payload.jd_text)
-    except Exception:
+    except Exception as e:
         logger.exception("JD tailoring failed")
-        raise HTTPException(status_code=500, detail="JD tailoring failed. Please try again.")
+        if is_temporary_ai_error(e):
+            raise HTTPException(status_code=503, detail="AI service is temporarily unavailable. Please try again in a moment.")
+        raise HTTPException(status_code=500, detail="Analysis failed. Please try again.")
 
 
 @api_router.post("/jd/tailor-file")
+@limiter.limit("20/minute")
 async def jd_tailor_file(
+    request: Request,
     jd_text: str = Form(...),
     file: UploadFile = File(...),
     user_id: str = Depends(get_current_user_id),
@@ -322,15 +430,119 @@ async def jd_tailor_file(
     if len(jd_text.strip()) < 50:
         raise HTTPException(status_code=400, detail="JD must be at least 50 characters")
     try:
-        return await ai_service.tailor_to_jd(text, jd_text)
-    except Exception:
+        result = await ai_service.tailor_to_jd(text, jd_text)
+        result["original_resume_text"] = text
+        return result
+    except Exception as e:
         logger.exception("JD tailoring failed")
-        raise HTTPException(status_code=500, detail="JD tailoring failed. Please try again.")
+        if is_temporary_ai_error(e):
+            raise HTTPException(status_code=503, detail="AI service is temporarily unavailable. Please try again in a moment.")
+        raise HTTPException(status_code=500, detail="Analysis failed. Please try again.")
+
+
+@api_router.post("/jd/download-docx")
+@limiter.limit("20/minute")
+async def jd_download_docx(request: Request, payload: dict, user_id: str = Depends(get_current_user_id)):
+    name          = payload.get("candidate_name", "Your Name")
+    job_title     = payload.get("job_title", "")
+    company       = payload.get("company", "")
+    summary       = payload.get("tailored_summary", "")
+    skills        = payload.get("tailored_skills", [])
+    original_text = payload.get("original_resume_text", "")
+
+    doc = Document()
+
+    # Remove default margins for tighter layout
+    for section in doc.sections:
+        section.top_margin    = Pt(36)
+        section.bottom_margin = Pt(36)
+        section.left_margin   = Pt(54)
+        section.right_margin  = Pt(54)
+
+    # Name
+    p = doc.add_paragraph()
+    run = p.add_run(name)
+    run.bold = True
+    run.font.size = Pt(20)
+    run.font.color.rgb = RGBColor(0x0F, 0x3D, 0x2E)
+    p.paragraph_format.space_after = Pt(2)
+
+    # Job title line
+    if job_title:
+        p2 = doc.add_paragraph()
+        run2 = p2.add_run(f"{job_title}" + (f"  ·  {company}" if company else ""))
+        run2.bold = True
+        run2.font.size = Pt(11)
+        run2.font.color.rgb = RGBColor(0x0F, 0x3D, 0x2E)
+        p2.paragraph_format.space_after = Pt(4)
+
+    # Separator
+    sep = doc.add_paragraph()
+    sep.add_run("─" * 72).font.color.rgb = RGBColor(0x0F, 0x3D, 0x2E)
+    sep.paragraph_format.space_after = Pt(6)
+
+    # Tailored Professional Summary
+    h1 = doc.add_paragraph()
+    r1 = h1.add_run("PROFESSIONAL SUMMARY")
+    r1.bold = True
+    r1.font.size = Pt(10)
+    r1.font.color.rgb = RGBColor(0x0F, 0x3D, 0x2E)
+    h1.paragraph_format.space_after = Pt(2)
+    doc.add_paragraph(summary).paragraph_format.space_after = Pt(8)
+
+    # Tailored Key Skills
+    h2 = doc.add_paragraph()
+    r2 = h2.add_run("KEY SKILLS")
+    r2.bold = True
+    r2.font.size = Pt(10)
+    r2.font.color.rgb = RGBColor(0x0F, 0x3D, 0x2E)
+    h2.paragraph_format.space_after = Pt(2)
+    doc.add_paragraph(", ".join(skills)).paragraph_format.space_after = Pt(8)
+
+    # Remaining sections from original resume (skip Summary + Skills)
+    skip_titles = {"PROFESSIONAL SUMMARY", "SUMMARY", "OBJECTIVE", "CAREER OBJECTIVE",
+                   "KEY SKILLS", "SKILLS", "TECHNICAL SKILLS", "CORE COMPETENCIES", "CORE SKILLS"}
+    lines = original_text.split("\n")
+    in_skip = False
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        upper = stripped.upper()
+        if upper in skip_titles:
+            in_skip = True
+            continue
+        # Detect new section header: short ALL-CAPS line
+        if stripped == stripped.upper() and 3 <= len(stripped) <= 60 and stripped.replace(" ", "").isalpha():
+            in_skip = False
+            hx = doc.add_paragraph()
+            rx = hx.add_run(stripped)
+            rx.bold = True
+            rx.font.size = Pt(10)
+            rx.font.color.rgb = RGBColor(0x0F, 0x3D, 0x2E)
+            hx.paragraph_format.space_before = Pt(8)
+            hx.paragraph_format.space_after  = Pt(2)
+            continue
+        if not in_skip:
+            p = doc.add_paragraph(stripped)
+            p.paragraph_format.space_after = Pt(2)
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    safe_title = (job_title or "tailored-resume").lower().replace(" ", "-").replace("/", "-")[:40]
+    filename = f"{safe_title}.docx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 # ========== AI Content Generation ==========
 @api_router.post("/ai/generate", response_model=AIGenerateResponse)
-async def ai_generate(payload: AIGenerateRequest, user_id: str = Depends(get_current_user_id)):
+@limiter.limit("20/minute")
+async def ai_generate(request: Request, payload: AIGenerateRequest, user_id: str = Depends(get_current_user_id)):
     try:
         result = await ai_service.generate_content(payload.prompt, payload.context or "", payload.kind)
         return AIGenerateResponse(text=result.get("text", ""), suggestions=result.get("suggestions", []))
@@ -341,7 +553,8 @@ async def ai_generate(payload: AIGenerateRequest, user_id: str = Depends(get_cur
 
 # ========== Job Search ==========
 @api_router.post("/jobs/search", response_model=JobSearchResponse)
-async def search_jobs_endpoint(payload: JobSearchRequest, user_id: str = Depends(get_current_user_id)):
+@limiter.limit("15/minute")
+async def search_jobs_endpoint(request: Request, payload: JobSearchRequest, user_id: str = Depends(get_current_user_id)):
     try:
         raw = await jobs_service.search_jobs(
             search_term=payload.search_term,
@@ -422,7 +635,8 @@ PLAN_PRICES = {
 
 
 @api_router.post("/payments/create-order", response_model=PaymentOrderResponse)
-async def create_payment_order(payload: PaymentOrderRequest, user_id: str = Depends(get_current_user_id)):
+@limiter.limit("5/minute")
+async def create_payment_order(request: Request, payload: PaymentOrderRequest, user_id: str = Depends(get_current_user_id)):
     key_id = os.environ.get("RAZORPAY_KEY_ID", "")
     key_secret = os.environ.get("RAZORPAY_KEY_SECRET", "")
 
@@ -498,10 +712,12 @@ async def razorpay_webhook(request: Request):
     webhook_secret = os.environ.get("RAZORPAY_WEBHOOK_SECRET", "")
     sig = request.headers.get("X-Razorpay-Signature", "")
 
-    if webhook_secret and sig:
-        expected = hmac.new(webhook_secret.encode(), body, hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(expected, sig):
-            raise HTTPException(status_code=400, detail="Invalid webhook signature")
+    if not webhook_secret or webhook_secret.startswith("REPLACE"):
+        raise HTTPException(status_code=503, detail="Webhook not configured")
+
+    expected = hmac.new(webhook_secret.encode(), body, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, sig):
+        raise HTTPException(status_code=400, detail="Invalid webhook signature")
 
     try:
         event = json.loads(body)

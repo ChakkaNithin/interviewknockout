@@ -12,29 +12,9 @@ async def extract_text_from_upload(file: UploadFile) -> str:
 
 def extract_text_from_bytes(content: bytes, filename: str) -> str:
     name = filename.lower()
-    if name.endswith(".pdf"):
-        return _extract_pdf(content)
-    if name.endswith(".docx") or name.endswith(".doc"):
-        return _extract_docx(content)
-    if name.endswith(".txt"):
-        return content.decode("utf-8", errors="ignore")
-    raise HTTPException(status_code=400, detail="Unsupported file type. Use .pdf, .docx or .txt")
-
-
-def _extract_pdf(content: bytes) -> str:
-    try:
-        from pypdf import PdfReader
-        reader = PdfReader(io.BytesIO(content))
-        text_parts = []
-        for page in reader.pages:
-            try:
-                text_parts.append(page.extract_text() or "")
-            except Exception:
-                continue
-        return "\n".join(text_parts).strip()
-    except Exception as e:
-        logger.exception("PDF extraction failed")
-        raise HTTPException(status_code=400, detail="Failed to read PDF")
+    if not name.endswith(".docx"):
+        raise HTTPException(status_code=400, detail="Only .docx files are supported. Please upload a Word document.")
+    return _extract_docx(content)
 
 
 def _extract_docx(content: bytes) -> str:

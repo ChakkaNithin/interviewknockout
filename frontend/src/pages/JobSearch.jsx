@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { mockJobs } from '../mock';
@@ -128,6 +129,7 @@ const Accordion = ({ title, icon: Icon, badge, children, defaultOpen = true }) =
 
 const JobSearch = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeMainTab, setActiveMainTab] = useState('configure');
   const [profileEditing, setProfileEditing] = useState(false);
   const [profile, setProfile] = useState(() => {
@@ -155,9 +157,16 @@ const JobSearch = () => {
     localStorage.setItem('covera_profile', JSON.stringify(profile));
   }, [profile]);
 
+  useEffect(() => {
+    if (!user || user.plan !== 'premium') return;
+    jobsApi.saved()
+      .then(items => setSavedJobs(new Set((items || []).map(j => j.id))))
+      .catch(() => {});
+  }, [user]);
+
   if (!user || user.plan !== 'premium') {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-slate-50 overflow-hidden">
         <Navbar />
         <div className="max-w-2xl mx-auto px-4 py-20 text-center">
           <div className="bg-white rounded-3xl border border-slate-100 shadow-xl p-10">
@@ -246,10 +255,65 @@ const JobSearch = () => {
   const good = jobs.filter(j => j.priority === 'GOOD').length;
   const fair = jobs.filter(j => j.priority === 'FAIR').length;
 
-  const toggleSave = (id) => {
+  const toggleSave = async (job) => {
+    const id = job.id;
     const s = new Set(savedJobs);
-    if (s.has(id)) s.delete(id); else s.add(id);
+    if (s.has(id)) {
+      s.delete(id);
+      try { await jobsApi.unsave(id); } catch (e) { setError('Failed to remove saved job. Please try again.'); return; }
+    } else {
+      s.add(id);
+      try { await jobsApi.save(job); } catch (e) { setError('Failed to save job. Please try again.'); return; }
+    }
     setSavedJobs(s);
+  };
+
+  const exportCsv = () => {
+    const rows = filtered.map(j => ({
+      title: j.title,
+      company: j.company,
+      location: j.location,
+      match: j.score,
+      priority: j.priority,
+      url: j.job_url,
+    }));
+    const headers = ['title', 'company', 'location', 'match', 'priority', 'url'];
+    const csv = [
+      headers.join(','),
+      ...rows.map(row => headers.map(h => `"${String(row[h] || '').replace(/"/g, '""')}"`).join(',')),
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'job-matches.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const printJobs = () => {
+    const w = window.open('', '_blank', 'width=900,height=700');
+    if (!w) return;
+    const esc = (v = '') => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    w.document.write(`
+      <html>
+        <head><title>Job Matches</title></head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.45; padding: 32px; color: #0f172a;">
+          <h1>Job Matches</h1>
+          ${filtered.map(j => `
+            <section style="border-bottom: 1px solid #e2e8f0; padding: 16px 0;">
+              <h2 style="margin: 0 0 4px;">${esc(j.title)}</h2>
+              <strong>${esc(j.company)}</strong>
+              <p>${esc(j.location)} | ${esc(j.priority)} | ${j.score}% match</p>
+              <p>${esc(j.description || '').slice(0, 500)}</p>
+            </section>
+          `).join('')}
+        </body>
+      </html>
+    `);
+    w.document.close();
+    w.focus();
+    w.print();
   };
 
   const addLocation = () => {
@@ -261,22 +325,30 @@ const JobSearch = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 overflow-hidden">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero header */}
-        <div className="bg-gradient-to-br from-[#0F3D2E] via-[#14543F] to-[#0F3D2E] rounded-2xl p-6 mb-6 text-white relative overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="bg-gradient-to-br from-[#0F3D2E] via-[#14543F] to-[#0F3D2E] rounded-2xl p-6 mb-6 text-white relative overflow-hidden"
+        >
           <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-[#FF6B47]/20 blur-3xl"></div>
           <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-extrabold tracking-tight">AI-Powered Job Search</h1>
               <p className="text-white/80 mt-1 text-sm">Configure your profile & filters, then let our AI-powered search find your perfect match.</p>
             </div>
-            <button onClick={runSearch} disabled={loading} className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF6B47] hover:bg-[#ff5630] disabled:opacity-60 text-white rounded-full font-bold shadow-lg transition-all">
+            <motion.button
+              onClick={runSearch} disabled={loading}
+              whileHover={!loading ? { scale: 1.04 } : {}} whileTap={!loading ? { scale: 0.96 } : {}}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF6B47] hover:bg-[#ff5630] disabled:opacity-60 text-white rounded-full font-bold shadow-lg transition-colors"
+            >
               {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Searching Jobs...</> : <><Search className="w-4 h-4" /> Search Jobs Now</>}
-            </button>
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
 
         {/* Tabs */}
         <div className="bg-white rounded-t-2xl border border-slate-100 border-b-0 px-5 flex items-center gap-6">
@@ -286,9 +358,18 @@ const JobSearch = () => {
           ].map(t => {
             const active = activeMainTab === t.id;
             return (
-              <button key={t.id} onClick={() => setActiveMainTab(t.id)} className={`py-4 px-1 relative flex items-center gap-2 text-sm font-bold border-b-2 transition-colors ${active ? 'border-[#FF6B47] text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+              <button key={t.id} onClick={() => setActiveMainTab(t.id)} className={`py-4 px-1 relative flex items-center gap-2 text-sm font-bold transition-colors ${active ? 'text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}>
                 <t.icon className="w-4 h-4" /> {t.label}
-                <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-extrabold ${active ? 'bg-[#FF6B47] text-white' : 'bg-slate-100 text-slate-600'}`}>{t.badge}</span>
+                <motion.span
+                  className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-extrabold transition-colors ${active ? 'bg-[#FF6B47] text-white' : 'bg-slate-100 text-slate-600'}`}
+                >{t.badge}</motion.span>
+                {active && (
+                  <motion.div
+                    layoutId="job-tab-underline"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF6B47] rounded-full"
+                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                  />
+                )}
               </button>
             );
           })}
@@ -480,10 +561,10 @@ const JobSearch = () => {
                 <div className="text-sm text-slate-600 mt-1">{jobs.length} jobs · {profile.targetJobTitles[0] || 'Target role'} · {filters.country}</div>
               </div>
               <div className="flex items-center gap-2">
-                <button className="px-4 py-2 rounded-lg bg-white border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5">
+                <button onClick={exportCsv} className="px-4 py-2 rounded-lg bg-white border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5">
                   <Download className="w-4 h-4" /> Excel
                 </button>
-                <button className="px-4 py-2 rounded-lg bg-white border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5">
+                <button onClick={printJobs} className="px-4 py-2 rounded-lg bg-white border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5">
                   <Download className="w-4 h-4" /> PDF
                 </button>
               </div>
@@ -528,13 +609,26 @@ const JobSearch = () => {
             </div>
 
             {/* Jobs list */}
-            <div className="space-y-3">
+            <motion.div
+              className="space-y-3"
+              initial="hidden"
+              animate="show"
+              variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
+            >
               {filtered.map((job, idx) => {
                 const cfg = priorityCfg[job.priority] || priorityCfg.GOOD;
                 const exp = expanded === job.id;
                 const saved = savedJobs.has(job.id);
                 return (
-                  <div key={job.id} onClick={() => setExpanded(exp ? null : job.id)} className="bg-white rounded-2xl border border-slate-100 cursor-pointer transition-all hover:shadow-md" style={{ borderLeft: `4px solid ${cfg.color}` }}>
+                  <motion.div
+                    key={job.id}
+                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } } }}
+                    whileHover={{ y: -3, boxShadow: '0 12px 28px rgba(0,0,0,0.09)' }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+                    onClick={() => setExpanded(exp ? null : job.id)}
+                    className="bg-white rounded-2xl border border-slate-100 cursor-pointer"
+                    style={{ borderLeft: `4px solid ${cfg.color}` }}
+                  >
                     <div className="p-5">
                       <div className="flex items-start gap-4">
                         <div className="flex-1 min-w-0">
@@ -564,25 +658,33 @@ const JobSearch = () => {
                           <div className="text-[10px] font-bold" style={{ color: cfg.color }}>MATCH</div>
                         </div>
                       </div>
-                      {exp && (
-                        <div className="mt-4 pt-4 border-t border-slate-100">
-                          <p className="text-sm text-slate-700 leading-relaxed mb-4">{job.description}</p>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <a href={job.job_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-bold transition-opacity hover:opacity-90" style={{ background: siteCfg[job.site]?.color || '#64748B' }}>
-                              Apply on {siteCfg[job.site]?.label || job.site} <ArrowRight className="w-3.5 h-3.5" />
-                            </a>
-                            <button onClick={e => { e.stopPropagation(); toggleSave(job.id); }} className={`px-4 py-2 rounded-lg border text-sm font-bold transition ${saved ? 'bg-[#FFF3EE] border-[#FF6B47] text-[#FF6B47]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}>
-                              {saved ? '★ Saved' : '☆ Save'}
-                            </button>
-                            <button onClick={e => e.stopPropagation()} className="px-4 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50">Tailor Resume</button>
-                          </div>
-                        </div>
-                      )}
+                      <AnimatePresence>
+                        {exp && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                            style={{ overflow: 'hidden' }}
+                          >
+                            <div className="mt-4 pt-4 border-t border-slate-100">
+                              <p className="text-sm text-slate-700 leading-relaxed mb-4">{job.description}</p>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <a href={job.job_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-bold hover:opacity-90 transition-opacity" style={{ background: siteCfg[job.site]?.color || '#64748B' }}>
+                                  Apply on {siteCfg[job.site]?.label || job.site} <ArrowRight className="w-3.5 h-3.5" />
+                                </a>
+                                <button onClick={e => { e.stopPropagation(); toggleSave(job); }} className={`px-4 py-2 rounded-lg border text-sm font-bold transition-colors ${saved ? 'bg-[#FFF3EE] border-[#FF6B47] text-[#FF6B47]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}>
+                                  {saved ? '★ Saved' : '☆ Save'}
+                                </button>
+                                <button onClick={e => { e.stopPropagation(); navigate('/jd-tailor'); }} className="px-4 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition-colors">Tailor Resume</button>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
-            </div>
+            </motion.div>
 
             {!filtered.length && (
               <div className="p-12 text-center text-slate-500">

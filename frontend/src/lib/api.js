@@ -1,9 +1,23 @@
 import axios from 'axios';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const getBackendUrl = () => {
+  const hostname = window.location.hostname;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:8000';
+  }
+  // Codespaces: swap the -3000 port in the current URL for -8000
+  if (hostname.includes('.app.github.dev')) {
+    return `https://${hostname.replace('-3000.app.github.dev', '-8000.app.github.dev')}`;
+  }
+  // Production / deployed domain — use env variable
+  return process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+};
+
+const BACKEND_URL = getBackendUrl();
+
 const API_BASE = `${BACKEND_URL}/api`;
 
-const api = axios.create({ baseURL: API_BASE, timeout: 120000 });
+const api = axios.create({ baseURL: API_BASE, timeout: 180000 });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('ik_token');
@@ -14,10 +28,13 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (r) => r,
   (err) => {
-    if (err.response && err.response.status === 401) {
+    // Only force logout on explicit 401 — not on network errors or 5xx
+    if (err.response?.status === 401) {
       localStorage.removeItem('ik_token');
       localStorage.removeItem('ik_user');
-      window.location.href = '/login';
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(err);
   }
@@ -47,6 +64,8 @@ export const atsApi = {
     if (target_role) fd.append('target_role', target_role);
     return api.post('/ats/analyze-file', fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data);
   },
+  applyFixes: (resume_text, fixes, target_role) =>
+    api.post('/ats/apply-fixes', { resume_text, fixes, target_role }).then(r => r.data),
 };
 
 export const jdApi = {

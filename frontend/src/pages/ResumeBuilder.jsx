@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import { mockTemplates } from '../mock';
 import { resumeApi, aiApi } from '../lib/api';
-import { Plus, Trash2, Save, Eye, Sparkles, User, Briefcase, GraduationCap, Award, Languages, Wrench, ArrowLeft, Loader2, Check, PenLine, X } from 'lucide-react';
+import { Plus, Trash2, Save, Eye, Sparkles, User, Briefcase, GraduationCap, Award, Languages, Wrench, ArrowLeft, Loader2, Check, PenLine, X, Printer } from 'lucide-react';
 
 const STATIC_SECTIONS = [
   { id: 'personal', name: 'Personal Info', icon: User },
@@ -18,11 +19,11 @@ const STATIC_SECTIONS = [
 const EMPTY_DATA = {
   personal: { name: '', title: '', email: '', phone: '', location: '', linkedin: '', github: '' },
   summary: { text: '' },
-  experiences: [{ id: 1, company: '', role: '', period: '', bullets: ['', ''] }],
-  education: [{ id: 1, school: '', degree: '', period: '', cgpa: '' }],
+  experiences: [{ id: '1', company: '', role: '', period: '', bullets: ['', ''] }],
+  education: [{ id: '1', school: '', degree: '', period: '', cgpa: '' }],
   skills: [''],
-  certifications: [{ id: 1, name: '', issuer: '', date: '' }],
-  languages: [{ id: 1, name: 'English', level: 'Native' }],
+  certifications: [{ id: '1', name: '', issuer: '', date: '' }],
+  languages: [{ id: '1', name: 'English', level: 'Native' }],
 };
 
 const LANGUAGE_LEVELS = ['Native', 'Fluent', 'Advanced', 'Intermediate', 'Basic'];
@@ -39,11 +40,39 @@ const ResumeBuilder = () => {
   const [resumeTitle, setResumeTitle] = useState('Untitled Resume');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState('');
   const [loadError, setLoadError] = useState('');
+  const [loadingResume, setLoadingResume] = useState(!!id);
+  const [atsBanner, setAtsBanner] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
+
+  // Load ATS-fixed resume if coming from ATS Checker
+  useEffect(() => {
+    if (id) return;
+    try {
+      const prefill = JSON.parse(sessionStorage.getItem('ik_ats_prefill') || 'null');
+      if (!prefill?.resumeData) return;
+      const r = prefill.resumeData;
+      setData({
+        personal: r.personal || EMPTY_DATA.personal,
+        summary: { text: r.summary || '' },
+        experiences: r.experiences?.length ? r.experiences.map(e => ({ ...e, id: e.id || String(Math.random()) })) : EMPTY_DATA.experiences,
+        education: r.education?.length ? r.education.map(e => ({ ...e, id: e.id || String(Math.random()) })) : EMPTY_DATA.education,
+        skills: r.skills?.length ? r.skills : EMPTY_DATA.skills,
+        certifications: r.certifications?.length ? r.certifications.map(c => ({ ...c, id: c.id || String(Math.random()) })) : EMPTY_DATA.certifications,
+        languages: r.languages || EMPTY_DATA.languages,
+      });
+      if (r.personal?.name) setResumeTitle(`${r.personal.name} — ATS Fixed`);
+      setAtsBanner({ score: prefill.score });
+      sessionStorage.removeItem('ik_ats_prefill');
+    } catch { /* ignore */ }
+  }, [id]);
 
   useEffect(() => {
     if (!id) return;
+    setLoadingResume(true);
     resumeApi.get(id).then(r => {
       setResumeId(r.id);
       setResumeTitle(r.title);
@@ -60,7 +89,7 @@ const ResumeBuilder = () => {
         });
         if (r.data.customSections?.length) setCustomSections(r.data.customSections);
       }
-    }).catch(() => setLoadError('Failed to load resume.'));
+    }).catch(() => setLoadError('Failed to load resume.')).finally(() => setLoadingResume(false));
   }, [id]);
 
   const buildPayload = useCallback(() => ({
@@ -80,6 +109,7 @@ const ResumeBuilder = () => {
 
   const handleSave = async () => {
     setSaving(true);
+    setSaveError('');
     try {
       const payload = buildPayload();
       if (resumeId) {
@@ -90,9 +120,11 @@ const ResumeBuilder = () => {
         window.history.replaceState(null, '', `/builder/${r.id}`);
       }
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } catch {
-      alert('Save failed. Please try again.');
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || 'Save failed. Please try again.';
+      setSaveError(msg);
+      setTimeout(() => setSaveError(''), 4000);
     } finally {
       setSaving(false);
     }
@@ -105,25 +137,25 @@ const ResumeBuilder = () => {
       const result = await aiApi.generate(prompt, '', 'summary');
       if (result.text) setData(d => ({ ...d, summary: { text: result.text } }));
     } catch {
-      alert('AI generation failed. Please try again.');
+      setAiError('AI generation failed. Please try again.');
+      setTimeout(() => setAiError(''), 3000);
     } finally {
       setAiGenerating(false);
     }
   };
 
-  const handlePrint = () => window.print();
 
   const template = mockTemplates.find(t => t.id === selectedTemplate) || mockTemplates[0];
 
   // Experience helpers
-  const addExp = () => setData(d => ({ ...d, experiences: [...d.experiences, { id: Date.now(), company: '', role: '', period: '', bullets: ['', ''] }] }));
+  const addExp = () => setData(d => ({ ...d, experiences: [...d.experiences, { id: String(Date.now()), company: '', role: '', period: '', bullets: ['', ''] }] }));
   const removeExp = (eid) => setData(d => ({ ...d, experiences: d.experiences.filter(e => e.id !== eid) }));
   const updateExp = (eid, field, value) => setData(d => ({ ...d, experiences: d.experiences.map(e => e.id === eid ? { ...e, [field]: value } : e) }));
   const updateBullet = (eid, i, value) => setData(d => ({ ...d, experiences: d.experiences.map(e => e.id === eid ? { ...e, bullets: e.bullets.map((b, bi) => bi === i ? value : b) } : e) }));
   const addBullet = (eid) => setData(d => ({ ...d, experiences: d.experiences.map(e => e.id === eid ? { ...e, bullets: [...e.bullets, ''] } : e) }));
 
   // Education helpers
-  const addEdu = () => setData(d => ({ ...d, education: [...d.education, { id: Date.now(), school: '', degree: '', period: '', cgpa: '' }] }));
+  const addEdu = () => setData(d => ({ ...d, education: [...d.education, { id: String(Date.now()), school: '', degree: '', period: '', cgpa: '' }] }));
   const removeEdu = (eid) => setData(d => ({ ...d, education: d.education.filter(e => e.id !== eid) }));
   const updateEdu = (eid, field, value) => setData(d => ({ ...d, education: d.education.map(e => e.id === eid ? { ...e, [field]: value } : e) }));
 
@@ -133,12 +165,12 @@ const ResumeBuilder = () => {
   const removeSkill = (i) => setData(d => ({ ...d, skills: d.skills.filter((_, si) => si !== i) }));
 
   // Certifications helpers
-  const addCert = () => setData(d => ({ ...d, certifications: [...d.certifications, { id: Date.now(), name: '', issuer: '', date: '' }] }));
+  const addCert = () => setData(d => ({ ...d, certifications: [...d.certifications, { id: String(Date.now()), name: '', issuer: '', date: '' }] }));
   const removeCert = (cid) => setData(d => ({ ...d, certifications: d.certifications.filter(c => c.id !== cid) }));
   const updateCert = (cid, field, value) => setData(d => ({ ...d, certifications: d.certifications.map(c => c.id === cid ? { ...c, [field]: value } : c) }));
 
   // Languages helpers
-  const addLang = () => setData(d => ({ ...d, languages: [...d.languages, { id: Date.now(), name: '', level: 'Intermediate' }] }));
+  const addLang = () => setData(d => ({ ...d, languages: [...d.languages, { id: String(Date.now()), name: '', level: 'Intermediate' }] }));
   const removeLang = (lid) => setData(d => ({ ...d, languages: d.languages.filter(l => l.id !== lid) }));
   const updateLang = (lid, field, value) => setData(d => ({ ...d, languages: d.languages.map(l => l.id === lid ? { ...l, [field]: value } : l) }));
 
@@ -146,7 +178,7 @@ const ResumeBuilder = () => {
   const addCustomSection = () => {
     const name = newSectionName.trim();
     if (!name) return;
-    const cs = { id: Date.now(), name, content: '' };
+    const cs = { id: String(Date.now()), name, content: '' };
     setCustomSections(prev => [...prev, cs]);
     setActiveSection(`custom_${cs.id}`);
     setNewSectionName('');
@@ -162,6 +194,14 @@ const ResumeBuilder = () => {
     ? customSections.find(cs => `custom_${cs.id}` === activeSection)
     : null;
 
+  if (loadingResume) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#FF6B47] animate-spin" />
+      </div>
+    );
+  }
+
   if (loadError) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -174,32 +214,68 @@ const ResumeBuilder = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 overflow-hidden">
       <Navbar />
+      {atsBanner && (
+        <div className="bg-[#0F3D2E] text-white px-4 py-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <span>✅</span>
+            All ATS fixes applied — your resume was upgraded from score {atsBanner.score} by AI. Review and save.
+          </div>
+          <button onClick={() => setAtsBanner(null)} className="text-white/60 hover:text-white text-lg leading-none">×</button>
+        </div>
+      )}
       <div className="max-w-[1400px] mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Link to="/dashboard" className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-50">
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-            <div>
-              <input
-                value={resumeTitle}
-                onChange={e => setResumeTitle(e.target.value)}
-                className="text-xl font-extrabold text-slate-900 bg-transparent border-none outline-none focus:bg-white focus:border focus:border-slate-200 focus:px-2 rounded"
-              />
-              <p className="text-xs text-slate-500">{resumeId ? `ID: ${resumeId.slice(0, 8)}…` : 'Not yet saved'}</p>
+        <div className="mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Link to="/dashboard" className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-50">
+                <ArrowLeft className="w-4 h-4" />
+              </Link>
+              <div>
+                <input
+                  value={resumeTitle}
+                  onChange={e => setResumeTitle(e.target.value)}
+                  className="text-xl font-extrabold text-slate-900 bg-transparent border-none outline-none focus:bg-white focus:border focus:border-slate-200 focus:px-2 rounded"
+                />
+                <p className="text-xs text-slate-500">{resumeId ? `ID: ${resumeId.slice(0, 8)}…` : 'Not yet saved'}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setShowPreview(true)} className="px-4 py-2 rounded-lg bg-white border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5">
+                <Eye className="w-4 h-4" /> Preview
+              </button>
+              <motion.button
+                onClick={handleSave} disabled={saving}
+                whileHover={!saving ? { scale: 1.04, boxShadow: '0 8px 20px rgba(255,107,71,0.30)' } : {}}
+                whileTap={!saving ? { scale: 0.96 } : {}}
+                className="px-4 py-2 rounded-lg bg-[#FF6B47] hover:bg-[#ff5630] disabled:opacity-60 text-white text-sm font-bold flex items-center gap-1.5 transition-colors"
+              >
+                <AnimatePresence mode="wait">
+                  {saving ? (
+                    <motion.span key="saving" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
+                      <Loader2 className="w-4 h-4 animate-spin" /> Saving…
+                    </motion.span>
+                  ) : saved ? (
+                    <motion.span key="saved" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
+                      <Check className="w-4 h-4" /> Saved!
+                    </motion.span>
+                  ) : (
+                    <motion.span key="save" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
+                      <Save className="w-4 h-4" /> Save
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </motion.button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={handlePrint} className="px-4 py-2 rounded-lg bg-white border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5">
-              <Eye className="w-4 h-4" /> Print / Preview
-            </button>
-            <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg bg-[#FF6B47] hover:bg-[#ff5630] disabled:opacity-60 text-white text-sm font-bold flex items-center gap-1.5">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-              {saving ? 'Saving…' : saved ? 'Saved!' : 'Save'}
-            </button>
-          </div>
+          <AnimatePresence>
+            {saveError && (
+              <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2 rounded-lg">
+                {saveError}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_600px] gap-4">
@@ -208,9 +284,12 @@ const ResumeBuilder = () => {
             <div className="text-xs font-bold text-slate-500 uppercase tracking-wider px-2 mb-2">Sections</div>
             <div className="space-y-0.5">
               {STATIC_SECTIONS.map(s => (
-                <button key={s.id} onClick={() => setActiveSection(s.id)} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition ${activeSection === s.id ? 'bg-[#FFF3EE] text-[#FF6B47]' : 'text-slate-700 hover:bg-slate-50'}`}>
-                  <s.icon className="w-4 h-4" />
-                  {s.name}
+                <button key={s.id} onClick={() => setActiveSection(s.id)} className={`relative w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${activeSection === s.id ? 'text-[#FF6B47]' : 'text-slate-700 hover:bg-slate-50'}`}>
+                  {activeSection === s.id && (
+                    <motion.div layoutId="section-indicator" className="absolute inset-0 bg-[#FFF3EE] rounded-lg" transition={{ type: 'spring', stiffness: 500, damping: 35 }} />
+                  )}
+                  <s.icon className="w-4 h-4 relative z-10" />
+                  <span className="relative z-10">{s.name}</span>
                 </button>
               ))}
             </div>
@@ -258,15 +337,17 @@ const ResumeBuilder = () => {
           </div>
 
           {/* Form */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-5 min-h-[600px]">
+          <div className="bg-white rounded-2xl border border-slate-100 p-5 min-h-[600px] overflow-hidden">
+            <AnimatePresence mode="wait">
+            <motion.div key={activeSection} initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -14 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}>
             {activeSection === 'personal' && (
               <div>
                 <h2 className="text-lg font-extrabold text-slate-900 mb-4">Personal Information</h2>
                 <div className="grid grid-cols-2 gap-3">
                   {[['name','Full Name','Your Name'],['title','Job Title','Software Engineer'],['email','Email','you@example.com'],['phone','Phone','+91 98765 43210'],['location','Location','Bangalore, India'],['linkedin','LinkedIn','linkedin.com/in/you'],['github','GitHub','github.com/you']].map(([k, l, ph]) => (
                     <div key={k} className={k === 'name' || k === 'title' ? 'col-span-2' : ''}>
-                      <label className="block text-xs font-bold text-slate-600 mb-1">{l}</label>
-                      <input type="text" value={data.personal[k]} onChange={e => setData(d => ({...d, personal: {...d.personal, [k]: e.target.value}}))} placeholder={ph} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#FF6B47]" />
+                      <label htmlFor={`personal-${k}`} className="block text-xs font-bold text-slate-600 mb-1">{l}</label>
+                      <input id={`personal-${k}`} name={k} type="text" value={data.personal[k]} onChange={e => setData(d => ({...d, personal: {...d.personal, [k]: e.target.value}}))} placeholder={ph} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#FF6B47]" />
                     </div>
                   ))}
                 </div>
@@ -433,6 +514,8 @@ const ResumeBuilder = () => {
                 <p className="text-xs text-slate-400 mt-2">Tip: Use • for bullet points. Content will appear in your resume preview.</p>
               </div>
             )}
+            </motion.div>
+            </AnimatePresence>
           </div>
 
           {/* Preview */}
@@ -512,6 +595,145 @@ const ResumeBuilder = () => {
           </div>
         </div>
       </div>
+
+      {/* ── Preview Modal ─────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showPreview && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={e => { if (e.target === e.currentTarget) setShowPreview(false); }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.93, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.93, y: 20 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
+            >
+              {/* Modal header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <div>
+                  <div className="font-extrabold text-slate-900">{resumeTitle}</div>
+                  <div className="text-xs text-slate-500 mt-0.5">Resume Preview</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => window.print()}
+                    className="px-4 py-2 rounded-xl bg-[#0F3D2E] text-white text-sm font-bold hover:bg-[#0b2e23] flex items-center gap-1.5 transition-colors"
+                  >
+                    <Printer className="w-4 h-4" /> Print / Download PDF
+                  </button>
+                  <button onClick={() => setShowPreview(false)} className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                    <X className="w-5 h-5 text-slate-600" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal body — enlarged resume preview */}
+              <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+                <div className="bg-white shadow-xl rounded-xl p-8 max-w-[680px] mx-auto" style={{ minHeight: '880px' }}>
+                  {/* Header */}
+                  <div className="pb-4 mb-5 border-b-2" style={{ borderColor: template.color }}>
+                    <div className="text-3xl font-extrabold text-slate-900">{data.personal.name || 'Your Name'}</div>
+                    <div className="font-bold text-base mt-1" style={{ color: template.color }}>{data.personal.title || 'Your Role'}</div>
+                    <div className="text-sm text-slate-500 mt-1.5">
+                      {[data.personal.email, data.personal.phone, data.personal.location].filter(Boolean).join(' · ') || 'Add your contact info'}
+                    </div>
+                    {(data.personal.linkedin || data.personal.github) && (
+                      <div className="text-sm text-slate-500">
+                        {[data.personal.linkedin, data.personal.github].filter(Boolean).join(' · ')}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Summary */}
+                  {data.summary.text && (
+                    <div className="mb-5">
+                      <div className="text-xs font-extrabold tracking-widest mb-2" style={{ color: template.color }}>PROFESSIONAL SUMMARY</div>
+                      <p className="text-sm text-slate-700 leading-relaxed">{data.summary.text}</p>
+                    </div>
+                  )}
+
+                  {/* Experience */}
+                  {data.experiences.some(e => e.company || e.role) && (
+                    <div className="mb-5">
+                      <div className="text-xs font-extrabold tracking-widest mb-3" style={{ color: template.color }}>WORK EXPERIENCE</div>
+                      {data.experiences.filter(e => e.company || e.role).map(e => (
+                        <div key={e.id} className="mb-4">
+                          <div className="flex items-baseline justify-between">
+                            <div className="text-base font-bold text-slate-900">{e.role}</div>
+                            <div className="text-xs text-slate-500 font-semibold">{e.period}</div>
+                          </div>
+                          <div className="text-sm font-semibold mb-1" style={{ color: template.color }}>{e.company}</div>
+                          <ul className="text-sm text-slate-700 space-y-0.5">
+                            {e.bullets.filter(b => b).map((b, i) => <li key={i} className="flex gap-2"><span className="text-slate-400 mt-0.5">•</span><span>{b}</span></li>)}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Skills */}
+                  {data.skills.some(s => s) && (
+                    <div className="mb-5">
+                      <div className="text-xs font-extrabold tracking-widest mb-2" style={{ color: template.color }}>SKILLS</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {data.skills.filter(s => s).map((s, i) => (
+                          <span key={i} className="px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-700">{s}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Education */}
+                  {data.education.some(e => e.school || e.degree) && (
+                    <div className="mb-5">
+                      <div className="text-xs font-extrabold tracking-widest mb-2" style={{ color: template.color }}>EDUCATION</div>
+                      {data.education.filter(e => e.school || e.degree).map(e => (
+                        <div key={e.id} className="mb-2">
+                          <div className="font-bold text-slate-900">{e.degree}</div>
+                          <div className="text-sm text-slate-600">{e.school}{e.period ? ` · ${e.period}` : ''}{e.cgpa ? ` · GPA: ${e.cgpa}` : ''}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Certifications */}
+                  {data.certifications.some(c => c.name) && (
+                    <div className="mb-5">
+                      <div className="text-xs font-extrabold tracking-widest mb-2" style={{ color: template.color }}>CERTIFICATIONS</div>
+                      {data.certifications.filter(c => c.name).map(c => (
+                        <div key={c.id} className="text-sm text-slate-700 mb-1">
+                          <span className="font-semibold">{c.name}</span>{c.issuer ? ` · ${c.issuer}` : ''}{c.date ? ` · ${c.date}` : ''}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Languages */}
+                  {data.languages.some(l => l.name) && (
+                    <div className="mb-5">
+                      <div className="text-xs font-extrabold tracking-widest mb-2" style={{ color: template.color }}>LANGUAGES</div>
+                      <p className="text-sm text-slate-700">{data.languages.filter(l => l.name).map(l => `${l.name} (${l.level})`).join(' · ')}</p>
+                    </div>
+                  )}
+
+                  {/* Custom sections */}
+                  {customSections.filter(cs => cs.content).map(cs => (
+                    <div key={cs.id} className="mb-5">
+                      <div className="text-xs font-extrabold tracking-widest mb-2" style={{ color: template.color }}>{cs.name.toUpperCase()}</div>
+                      <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{cs.content}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

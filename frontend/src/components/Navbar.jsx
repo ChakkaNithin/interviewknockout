@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FileText, Menu, X, ChevronDown, LogOut, User, Briefcase, Target, Search } from 'lucide-react';
+import { Menu, X, ChevronDown, LogOut, User, Briefcase, Target, Search } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -24,11 +25,12 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0F3D2E] to-[#1F6B4F] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
-              <FileText className="w-5 h-5 text-white" strokeWidth={2.5} />
-            </div>
-            <span className="text-xl font-bold text-slate-900 tracking-tight">InterviewKnockout</span>
+          <Link to="/" className="flex items-center group">
+            <img
+              src={logo}
+              alt="InterviewKnockout"
+              className="h-10 w-auto object-contain group-hover:scale-105 transition-transform duration-200"
+            />
           </Link>
 
           {/* Desktop Nav */}

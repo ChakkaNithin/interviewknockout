@@ -16,10 +16,10 @@ export const mockTemplates = [
 ];
 
 export const mockStats = [
-  { value: '15M+', label: 'Resumes Created' },
-  { value: '10M+', label: 'Resume Examples' },
-  { value: '11 yrs', label: 'Helping Job Seekers' },
-  { value: '1M+', label: 'Monthly Readers' },
+  { value: '15M+', label: 'Resumes Optimized' },
+  { value: '10M+', label: 'Job Matches Found' },
+  { value: '11 Yrs', label: 'Helping Job Seekers' },
+  { value: '1M+', label: 'Interview Calls Generated' },
 ];
 
 export const mockFeatures = [
@@ -208,4 +208,4 @@ export const mockJobs = [
   { id: 8, score: 44, priority: 'FAIR', site: 'job_board', title: 'Data Scientist - AI Products', company: 'Accenture', location: 'Mumbai, Maharashtra, India', job_type: 'Full-time', date_posted: '5 days ago', is_remote: false, min_amount: 14, max_amount: 24, currency: 'LPA', skills: ['Python', 'ML', 'TensorFlow'], experience_range: '2-5 years', company_rating: 4.0, description: 'Data Scientist role building ML models and AI-powered products for global clients across retail and BFSI sectors.', job_url: '#' },
 ];
 
-export const trustedCompanies = ['Spotify', 'JP Morgan', 'Google', 'Microsoft', 'Amazon', 'Meta'];
+export const trustedCompanies = ['Google', 'Microsoft', 'Amazon', 'TCS', 'Adobe', 'Infosys', 'Walmart', 'Deloitte', 'JP Morgan', 'Meta', 'Spotify', 'Oracle'];

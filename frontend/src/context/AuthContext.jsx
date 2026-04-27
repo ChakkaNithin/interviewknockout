@@ -11,32 +11,32 @@ export const AuthProvider = ({ children }) => {
     const init = async () => {
       const token = localStorage.getItem('ik_token');
       const cachedUser = localStorage.getItem('ik_user');
+
       if (cachedUser) {
-        try {
-          setUser(JSON.parse(cachedUser));
-        } catch (error) {
-          console.error('Failed to parse cached user:', error);
-          localStorage.removeItem('ik_user');
-        }
+        try { setUser(JSON.parse(cachedUser)); } catch { localStorage.removeItem('ik_user'); }
       }
+
       if (token) {
         try {
           const fresh = await authApi.me();
           setUser(fresh);
           localStorage.setItem('ik_user', JSON.stringify(fresh));
         } catch (error) {
-          console.error('Session expired or invalid:', error);
-          localStorage.removeItem('ik_token');
-          localStorage.removeItem('ik_user');
-          setUser(null);
+          const status = error?.response?.status;
+          if (status === 401 || status === 403 || status === 404) {
+            // Token is invalid, expired, or points to a deleted user.
+            localStorage.removeItem('ik_token');
+            localStorage.removeItem('ik_user');
+            setUser(null);
+          }
+          // Network error / 5xx — keep cached user logged in, don't force logout
         }
       }
+
       setLoading(false);
     };
     init();
-    // authApi is a module-level import (stable); safe to omit from deps
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // eslint-disable-line
 
   const login = async (email, password) => {
     const res = await authApi.login(email, password);
@@ -55,7 +55,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginWithGoogle = async (googleToken) => {
-    // Send Google JWT token to backend for verification
     const res = await authApi.google({ token: googleToken });
     localStorage.setItem('ik_token', res.token);
     localStorage.setItem('ik_user', JSON.stringify(res.user));
