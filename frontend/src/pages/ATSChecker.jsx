@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import { CheckCircle2, Target, FileSearch, TrendingUp, Award, Clock, ArrowRight, Sparkles, ShieldCheck, Zap } from 'lucide-react';
+import { ease } from '../lib/animations';
 
-const ease = [0.22, 1, 0.36, 1];
 const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0, transition: { duration: 0.5, ease } } };
 const stagger = (d = 0.08) => ({ hidden: {}, show: { transition: { staggerChildren: d } } });
 

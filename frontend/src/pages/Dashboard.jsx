@@ -6,8 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { resumeApi } from '../lib/api';
 import { mockTemplates } from '../mock';
 import { Plus, FileText, Sparkles, Clock, Download, Copy, Trash2, Zap, Loader2 } from 'lucide-react';
-
-const ease = [0.22, 1, 0.36, 1];
+import { ease } from '../lib/animations';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },

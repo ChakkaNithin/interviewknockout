@@ -9,8 +9,7 @@ import { ArrowRight, Star, Check, Sparkles, Target, ShieldCheck, LayoutGrid, Spe
 
 const iconMap = { SpellCheck, Target, LayoutGrid, ShieldCheck };
 
-// ─── Shared animation config ──────────────────────────────────────────────────
-const ease = [0.22, 1, 0.36, 1];
+import { ease } from '../lib/animations';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },

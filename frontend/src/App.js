@@ -1,17 +1,24 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
-import Landing from './pages/Landing';
-import Auth from './pages/Auth';
-import AuthCallback from './pages/AuthCallback';
-import Dashboard from './pages/Dashboard';
-import Pricing from './pages/Pricing';
-import ResumeBuilder from './pages/ResumeBuilder';
-import ATSChecker from './pages/ATSChecker';
-import JDTailor from './pages/JDTailor';
-import JobSearch from './pages/JobSearch';
 import './App.css';
+
+const Landing      = lazy(() => import('./pages/Landing'));
+const Auth         = lazy(() => import('./pages/Auth'));
+const AuthCallback = lazy(() => import('./pages/AuthCallback'));
+const Dashboard    = lazy(() => import('./pages/Dashboard'));
+const Pricing      = lazy(() => import('./pages/Pricing'));
+const ResumeBuilder = lazy(() => import('./pages/ResumeBuilder'));
+const ATSChecker   = lazy(() => import('./pages/ATSChecker'));
+const JDTailor     = lazy(() => import('./pages/JDTailor'));
+const JobSearch    = lazy(() => import('./pages/JobSearch'));
+
+const PageSpinner = () => (
+  <div className="min-h-screen flex items-center justify-center bg-white">
+    <div className="w-10 h-10 rounded-full border-4 border-slate-200 border-t-[#0F3D2E] animate-spin" />
+  </div>
+);
 
 const NotFound = () => (
   <div className="min-h-screen flex flex-col items-center justify-center bg-white text-center p-8">
@@ -49,20 +56,22 @@ class ErrorBoundary extends React.Component {
 
 function AppRoutes() {
   return (
-    <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Auth key="login" mode="login" />} />
-      <Route path="/signup" element={<Auth key="signup" mode="signup" />} />
-      <Route path="/auth/callback" element={<AuthCallback />} />
-      <Route path="/pricing" element={<Pricing />} />
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/builder" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
-      <Route path="/builder/:id" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
-      <Route path="/ats-checker" element={<ProtectedRoute><ATSChecker /></ProtectedRoute>} />
-      <Route path="/jd-tailor" element={<ProtectedRoute><JDTailor /></ProtectedRoute>} />
-      <Route path="/jobs" element={<ProtectedRoute><JobSearch /></ProtectedRoute>} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <Suspense fallback={<PageSpinner />}>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Auth key="login" mode="login" />} />
+        <Route path="/signup" element={<Auth key="signup" mode="signup" />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/builder" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
+        <Route path="/builder/:id" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
+        <Route path="/ats-checker" element={<ProtectedRoute><ATSChecker /></ProtectedRoute>} />
+        <Route path="/jd-tailor" element={<ProtectedRoute><JDTailor /></ProtectedRoute>} />
+        <Route path="/jobs" element={<ProtectedRoute><JobSearch /></ProtectedRoute>} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   );
 }
 

@@ -6,8 +6,7 @@ import Footer from '../components/Footer';
 import { mockFaqs } from '../mock';
 import { Check, X, ArrowRight, Sparkles, Shield, Zap, Award, ChevronDown, Loader2, CheckCircle2, Clock, ShieldCheck, CalendarDays } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-
-const ease = [0.22, 1, 0.36, 1];
+import { ease } from '../lib/animations';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },

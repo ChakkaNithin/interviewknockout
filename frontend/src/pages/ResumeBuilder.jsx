@@ -169,7 +169,9 @@ const ResumeBuilder = () => {
     };
     const t1 = setTimeout(check, 200);
     const t2 = setTimeout(check, 500);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    const onKey = (e) => { if (e.key === 'Escape') setShowPreview(false); };
+    document.addEventListener('keydown', onKey);
+    return () => { clearTimeout(t1); clearTimeout(t2); document.removeEventListener('keydown', onKey); };
   }, [showPreview]);
 
   const handleModalScroll = () => {
@@ -777,6 +779,9 @@ const ResumeBuilder = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.93, y: 20 }}
               transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Resume Preview"
               className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden relative"
             >
               {/* Modal header */}
