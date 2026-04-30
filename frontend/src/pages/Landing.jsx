@@ -6,10 +6,9 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { mockTemplates, mockStats, mockFeatures, mockTestimonials, mockPricing, mockFaqs, trustedCompanies } from '../mock';
 import { ArrowRight, Star, Check, Sparkles, Target, ShieldCheck, LayoutGrid, SpellCheck, ChevronDown, FileText, Zap, Award, Users, TrendingUp, Search } from 'lucide-react';
+import { ease } from '../lib/animations';
 
 const iconMap = { SpellCheck, Target, LayoutGrid, ShieldCheck };
-
-import { ease } from '../lib/animations';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
@@ -1099,8 +1098,8 @@ const Landing = () => {
             Join 1,000+ candidates who landed interviews with InterviewKnockout's expert resume service.
           </p>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }} className="inline-block">
-            <Link to="/ats-checker" className="inline-flex items-center gap-2 px-8 py-4 bg-[#FF6B47] hover:bg-[#ff5630] text-white rounded-full font-bold text-lg shadow-2xl shadow-[#FF6B47]/30 transition-colors">
-              Get My Resume Score <ArrowRight className="w-5 h-5" />
+            <Link to={user ? '/builder' : '/signup'} className="inline-flex items-center gap-2 px-8 py-4 bg-[#FF6B47] hover:bg-[#ff5630] text-white rounded-full font-bold text-lg shadow-2xl shadow-[#FF6B47]/30 transition-colors">
+              Build Your Resume <ArrowRight className="w-5 h-5" />
             </Link>
           </motion.div>
           <div className="flex items-center justify-center gap-2 mt-6 text-sm text-white/70">
