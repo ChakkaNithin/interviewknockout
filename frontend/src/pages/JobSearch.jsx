@@ -1,700 +1,231 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
-import { useAuth } from '../context/AuthContext';
-import { mockJobs } from '../mock';
-import { jobsApi } from '../lib/api';
-import { MapPin, Briefcase, Clock, DollarSign, TrendingUp, Home, Star, Download, ArrowRight, LayoutGrid, List, Search, Check, Loader2, User, Edit3, Mail, Filter, Globe, Calendar, Zap, Users, Plus, X, ChevronDown, Settings, Lock } from 'lucide-react';
+import { CheckCircle2, Briefcase, ArrowRight, Zap, Clock, ShieldCheck, Search, Filter, Building2, TrendingUp, Star } from 'lucide-react';
 
-const siteCfg = {
-  job_board: { color: '#4F8EF7', label: 'Job Board', short: 'J', bg: '#EFF6FF' },
-};
+const ease = [0.22, 1, 0.36, 1];
+const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0, transition: { duration: 0.5, ease } } };
+const stagger = (d = 0.08) => ({ hidden: {}, show: { transition: { staggerChildren: d } } });
 
-const priorityCfg = {
-  EXCELLENT: { color: '#0D6B4F', bg: '#E8F5F0', border: '#BBE8D8' },
-  GOOD: { color: '#4F8EF7', bg: '#EFF6FF', border: '#BFDBFE' },
-  FAIR: { color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A' },
-  LOW: { color: '#64748B', bg: '#F8FAFC', border: '#E2E8F0' },
-};
+const steps = [
+  { step: '01', title: 'Share Your Resume & Preferences', desc: 'Tell us your target role, preferred locations, industry, and salary range. We do the rest — no job board sign-ups, no endless scrolling.' },
+  { step: '02', title: 'We Search 50+ Sources', desc: 'We scan LinkedIn, Naukri, Indeed, company career pages, and exclusive recruiter networks — sources most candidates don\'t even know exist.' },
+  { step: '03', title: 'Deep Compatibility Matching', desc: 'Every job is matched against your skills, experience level, and ATS score to estimate your probability of getting a call — we only include strong matches.' },
+  { step: '04', title: 'Curated List Delivered', desc: 'You receive a shortlist of 15–40 curated jobs (depending on your plan) with direct application links, match reasoning, and our ATS score prediction for each.' },
+];
 
-const DEFAULT_PROFILE = {
-  name: 'Your Name',
-  email: 'you@example.com',
-  yearsExperience: 2,
-  seniorityLevel: 'Mid Level',
-  currentTitle: 'Software Engineer',
-  targetJobTitles: ['Software Engineer', 'Full Stack Developer'],
-  skills: ['Python', 'JavaScript', 'React', 'FastAPI', 'SQL'],
-  technologies: ['Python', 'Node.js', 'PostgreSQL', 'AWS', 'Docker'],
-  preferredLocation: 'Unknown',
-  remotePreference: 'Unknown',
-};
+const deliverables = [
+  'Curated job list tailored to your profile (15–40 roles)',
+  'Direct application links — no redirects',
+  'Why you\'re a match — per job explanation',
+  'Estimated ATS score for your resume vs. each JD',
+  'Company size, funding stage & culture notes',
+  'Recruiter contact details where available',
+  'Best time to apply recommendations',
+  'Jobs delivered as a clean spreadsheet or PDF',
+];
 
-const DEFAULT_FILTERS = {
-  specificLocations: [],
-  country: 'India',
-  postedWithin: 'Last 7 days',
-  customDays: 7,
-  remote: 'any',
-  easyApply: 'any',
-  reportsToRole: 'any',
-};
-
-const POSTED_OPTIONS = ['Last 24 hours', 'Last 7 days', 'Last 30 days', 'Last 3 months', 'Last 12 months', 'Last 2 years'];
-const COUNTRIES = ['India', 'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'Singapore'];
-
-const StarRating = ({ rating }) => (
-  <div className="inline-flex items-center gap-0.5">
-    {[1,2,3,4,5].map(i => (
-      <Star key={i} className={`w-3 h-3 ${i <= Math.round(rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
-    ))}
-    <span className="text-xs font-bold text-slate-600 ml-1">{rating}</span>
-  </div>
-);
-
-const SourceBadge = ({ site }) => {
-  const cfg = siteCfg[site] || { color: '#64748B', label: site, short: '?', bg: '#F1F5F9' };
-  return (
-    <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold" style={{ background: cfg.bg, color: cfg.color }}>
-      <div className="w-4 h-4 rounded flex items-center justify-center text-[9px] font-extrabold text-white" style={{ background: cfg.color }}>{cfg.short}</div>
-      via {cfg.label}
-    </div>
-  );
-};
-
-const TagPill = ({ children, onRemove, color = '#4F8EF7' }) => (
-  <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold" style={{ background: color + '15', color: color, border: `1px solid ${color}30` }}>
-    {children}
-    {onRemove && (
-      <button onClick={onRemove} className="hover:opacity-60">
-        <X className="w-3 h-3" />
-      </button>
-    )}
-  </span>
-);
-
-const ProfileField = ({ icon: Icon, label, value, editing, onChange, type = 'text' }) => (
-  <div>
-    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-      {Icon && <Icon className="w-3.5 h-3.5" />}{label}
-    </div>
-    {editing ? (
-      <input type={type} value={value} onChange={(e) => onChange(type === 'number' ? parseInt(e.target.value) || 0 : e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#FF6B47]" />
-    ) : (
-      <div className="text-sm font-semibold text-slate-900">{value || <span className="text-slate-400">Not set</span>}</div>
-    )}
-  </div>
-);
-
-const TagEditor = ({ tags, onChange, placeholder, color }) => {
-  const [input, setInput] = useState('');
-  const add = () => {
-    const v = input.trim();
-    if (v && !tags.includes(v)) {
-      onChange([...tags, v]);
-      setInput('');
-    }
-  };
-  return (
-    <div>
-      <div className="flex flex-wrap gap-2 mb-2">
-        {tags.map(t => (
-          <TagPill key={t} color={color} onRemove={() => onChange(tags.filter(x => x !== t))}>{t}</TagPill>
-        ))}
-      </div>
-      <div className="flex gap-2">
-        <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), add())} placeholder={placeholder} className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#FF6B47]" />
-        <button onClick={add} className="px-3 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-800"><Plus className="w-4 h-4" /></button>
-      </div>
-    </div>
-  );
-};
-
-const Accordion = ({ title, icon: Icon, badge, children, defaultOpen = true }) => {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="border-b border-slate-100 last:border-b-0">
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between py-4 text-left">
-        <span className="flex items-center gap-2 font-bold text-slate-900 text-sm">
-          {Icon && <Icon className="w-4 h-4 text-slate-500" />} {title}
-          {badge && <span className="px-2 py-0.5 rounded-full bg-[#4F8EF7] text-white text-[10px] font-bold uppercase">{badge}</span>}
-        </span>
-        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && <div className="pb-4">{children}</div>}
-    </div>
-  );
-};
+const plans = [
+  {
+    id: 'pro',
+    name: 'Pro',
+    price: '₹499',
+    originalPrice: '₹699',
+    jobs: '15–20',
+    desc: 'ATS Score + JD Tailoring + 15–20 curated job matches',
+    features: ['Full ATS Score Report', 'Expert Resume Rewrite', 'JD Tailoring for 1 Job Description', '15–20 Curated Job Matches', 'Direct Application Links', '24–48 hr Delivery', 'Priority Support'],
+    cta: 'Get Pro',
+    highlighted: false,
+    badge: 'Limited Offer',
+  },
+  {
+    id: 'premium',
+    name: 'Premium',
+    price: '₹899',
+    originalPrice: '₹1,299',
+    jobs: '30–40',
+    desc: 'Everything in Pro — more jobs, deeper recruiter research',
+    features: ['Everything in Pro', '30–40 Curated Job Matches', 'Recruiter Contact Details', 'Company Deep-Dive Research', 'Priority 24hr Delivery', 'Direct Recruiter Outreach Tips', 'Dedicated Support'],
+    cta: 'Get Premium',
+    highlighted: true,
+    badge: 'Best Value',
+  },
+];
 
 const JobSearch = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [activeMainTab, setActiveMainTab] = useState('configure');
-  const [profileEditing, setProfileEditing] = useState(false);
-  const [profile, setProfile] = useState(() => {
-    try {
-      const s = localStorage.getItem('covera_profile');
-      return s ? JSON.parse(s) : DEFAULT_PROFILE;
-    } catch (error) {
-      console.error('Failed to parse saved profile:', error);
-      return DEFAULT_PROFILE;
-    }
-  });
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
-  const [locationInput, setLocationInput] = useState('');
-  const [siteFilter, setSiteFilter] = useState('all');
-  const [expanded, setExpanded] = useState(null);
-  const [viewMode, setViewMode] = useState('cards');
-  const [savedJobs, setSavedJobs] = useState(new Set());
-  const [searchQuery, setSearchQuery] = useState('');
-  const [jobs, setJobs] = useState(mockJobs);
-  const [isDemoData, setIsDemoData] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    localStorage.setItem('covera_profile', JSON.stringify(profile));
-  }, [profile]);
-
-  useEffect(() => {
-    if (!user || user.plan !== 'premium') return;
-    jobsApi.saved()
-      .then(items => setSavedJobs(new Set((items || []).map(j => j.id))))
-      .catch(() => {});
-  }, [user]);
-
-  if (!user || user.plan !== 'premium') {
-    return (
-      <div className="min-h-screen bg-slate-50 overflow-hidden">
-        <Navbar />
-        <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-xl p-10">
-            <div className="w-20 h-20 rounded-full bg-[#EFF6FF] flex items-center justify-center mx-auto mb-6">
-              <Lock className="w-9 h-9 text-[#4F8EF7]" />
-            </div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EFF6FF] text-[#4F8EF7] text-xs font-bold uppercase tracking-wider mb-4">
-              Premium Feature
-            </div>
-            <h1 className="text-3xl font-extrabold text-slate-900 mb-3">AI-Powered Job Search</h1>
-            <p className="text-slate-600 mb-2">Get matched to jobs that fit your skills, experience, and preferences — powered by real-time search.</p>
-            <p className="text-slate-500 text-sm mb-8">This feature is available on the <span className="font-bold text-[#4F8EF7]">Premium plan</span>.</p>
-            <div className="grid grid-cols-2 gap-4 mb-8 text-left">
-              {['Real-time job scraping', 'AI match scoring', 'Custom filters & alerts', 'Excel/PDF export'].map(f => (
-                <div key={f} className="flex items-center gap-2 text-sm text-slate-700">
-                  <div className="w-5 h-5 rounded-full bg-[#EFF6FF] flex items-center justify-center flex-shrink-0">
-                    <Check className="w-3 h-3 text-[#4F8EF7]" strokeWidth={3} />
-                  </div>
-                  {f}
-                </div>
-              ))}
-            </div>
-            <Link to="/pricing" className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#4F8EF7] hover:bg-[#3b7be0] text-white rounded-full font-bold shadow-lg shadow-[#4F8EF7]/25 transition-all">
-              Upgrade to Premium <ArrowRight className="w-4 h-4" />
-            </Link>
-            <div className="mt-4">
-              <Link to="/dashboard" className="text-sm text-slate-500 hover:text-slate-700 font-medium">← Back to Dashboard</Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const saveProfile = () => setProfileEditing(false);
-
-  const hoursFromPosted = () => {
-    const m = { 'Last 24 hours': 24, 'Last 7 days': 168, 'Last 30 days': 720, 'Last 3 months': 2160, 'Last 12 months': 8760, 'Last 2 years': 17520 };
-    return m[filters.postedWithin] || 168;
-  };
-
-  const runSearch = async () => {
-    const searchTerm = profile.targetJobTitles[0] || profile.currentTitle || 'Software Engineer';
-    const loc = filters.specificLocations[0] || filters.country;
-    setLoading(true);
-    setError('');
-    try {
-      const resp = await jobsApi.search({
-        search_term: searchTerm,
-        location: loc,
-        hours_old: hoursFromPosted(),
-        is_remote: filters.remote === 'yes' ? true : filters.remote === 'no' ? false : null,
-        results_per_page: 25,
-        resume_skills: profile.skills,
-        easy_apply: filters.easyApply === 'yes' ? true : filters.easyApply === 'no' ? false : null,
-      });
-      if (resp.jobs && resp.jobs.length > 0) {
-        setJobs(resp.jobs);
-        setIsDemoData(false);
-        setActiveMainTab('matches');
-      } else {
-        setError('No jobs found for this search. Try different keywords or location.');
-        setJobs([]);
-        setIsDemoData(false);
-        setActiveMainTab('matches');
-      }
-    } catch (e) {
-      setError(e.response?.data?.detail || 'Job search failed. Please try again.');
-      setJobs([]);
-      setIsDemoData(false);
-      setActiveMainTab('matches');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const sites = ['all', 'job_board'];
-  const filtered = jobs.filter(j => {
-    const matchesSite = siteFilter === 'all' || j.site === siteFilter;
-    const matchesSearch = !searchQuery || j.title.toLowerCase().includes(searchQuery.toLowerCase()) || j.company.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSite && matchesSearch;
-  });
-  const counts = { all: jobs.length };
-  sites.forEach(s => { if (s !== 'all') counts[s] = jobs.filter(j => j.site === s).length; });
-  const excellent = jobs.filter(j => j.priority === 'EXCELLENT').length;
-  const good = jobs.filter(j => j.priority === 'GOOD').length;
-  const fair = jobs.filter(j => j.priority === 'FAIR').length;
-
-  const toggleSave = async (job) => {
-    const id = job.id;
-    const s = new Set(savedJobs);
-    if (s.has(id)) {
-      s.delete(id);
-      try { await jobsApi.unsave(id); } catch (e) { setError('Failed to remove saved job. Please try again.'); return; }
-    } else {
-      s.add(id);
-      try { await jobsApi.save(job); } catch (e) { setError('Failed to save job. Please try again.'); return; }
-    }
-    setSavedJobs(s);
-  };
-
-  const exportCsv = () => {
-    const rows = filtered.map(j => ({
-      title: j.title,
-      company: j.company,
-      location: j.location,
-      match: j.score,
-      priority: j.priority,
-      url: j.job_url,
-    }));
-    const headers = ['title', 'company', 'location', 'match', 'priority', 'url'];
-    const csv = [
-      headers.join(','),
-      ...rows.map(row => headers.map(h => `"${String(row[h] || '').replace(/"/g, '""')}"`).join(',')),
-    ].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'job-matches.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const printJobs = () => {
-    const w = window.open('', '_blank', 'width=900,height=700');
-    if (!w) return;
-    const esc = (v = '') => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    w.document.write(`
-      <html>
-        <head><title>Job Matches</title></head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.45; padding: 32px; color: #0f172a;">
-          <h1>Job Matches</h1>
-          ${filtered.map(j => `
-            <section style="border-bottom: 1px solid #e2e8f0; padding: 16px 0;">
-              <h2 style="margin: 0 0 4px;">${esc(j.title)}</h2>
-              <strong>${esc(j.company)}</strong>
-              <p>${esc(j.location)} | ${esc(j.priority)} | ${j.score}% match</p>
-              <p>${esc(j.description || '').slice(0, 500)}</p>
-            </section>
-          `).join('')}
-        </body>
-      </html>
-    `);
-    w.document.close();
-    w.focus();
-    w.print();
-  };
-
-  const addLocation = () => {
-    const v = locationInput.trim();
-    if (v && !filters.specificLocations.includes(v)) {
-      setFilters({ ...filters, specificLocations: [...filters.specificLocations, v] });
-      setLocationInput('');
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50 overflow-hidden">
+    <div className="min-h-screen bg-white overflow-hidden">
       <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Hero header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="bg-gradient-to-br from-[#0F3D2E] via-[#14543F] to-[#0F3D2E] rounded-2xl p-6 mb-6 text-white relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-[#FF6B47]/20 blur-3xl"></div>
-          <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-extrabold tracking-tight">AI-Powered Job Search</h1>
-              <p className="text-white/80 mt-1 text-sm">Configure your profile & filters, then let our AI-powered search find your perfect match.</p>
-            </div>
-            <motion.button
-              onClick={runSearch} disabled={loading}
-              whileHover={!loading ? { scale: 1.04 } : {}} whileTap={!loading ? { scale: 0.96 } : {}}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#FF6B47] hover:bg-[#ff5630] disabled:opacity-60 text-white rounded-full font-bold shadow-lg transition-colors"
-            >
-              {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Searching Jobs...</> : <><Search className="w-4 h-4" /> Search Jobs Now</>}
-            </motion.button>
-          </div>
+
+      {/* Hero */}
+      <section className="pt-14 pb-14 bg-gradient-to-b from-[#EEFAF4] via-[#F6FDF9] to-white">
+        <motion.div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center" variants={stagger(0.09)} initial="hidden" animate="show">
+          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 text-[#0D6B4F] text-xs font-bold uppercase tracking-wider mb-6">
+            <Search className="w-3.5 h-3.5" /> Done-For-You Job Search
+          </motion.div>
+          <motion.h1 variants={fadeUp} className="text-4xl lg:text-6xl font-extrabold text-slate-900 tracking-tight mb-5 leading-tight">
+            Stop applying everywhere and
+            <span className="text-[#0D6B4F]"> getting nowhere.</span>
+          </motion.h1>
+          <motion.p variants={fadeUp} className="text-lg text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed">
+            The average job seeker spends 11 hours a week searching job boards — and still misses the best opportunities. We search 50+ sources, filter for genuine fit, and hand you a curated shortlist of roles you're actually qualified for.
+          </motion.p>
+          <motion.div variants={fadeUp} className="flex flex-wrap items-center justify-center gap-4">
+            {[['50+', 'Sources Searched'], ['15–40', 'Curated Matches'], ['24–48 hrs', 'Delivery Time'], ['11 hrs', 'Saved Per Week']].map(([v, l]) => (
+              <div key={l} className="flex items-center gap-2 bg-white border border-slate-200 rounded-full px-4 py-2 shadow-sm">
+                <span className="font-extrabold text-[#0D6B4F] text-sm">{v}</span>
+                <span className="text-slate-600 text-sm">{l}</span>
+              </div>
+            ))}
+          </motion.div>
         </motion.div>
+      </section>
 
-        {/* Tabs */}
-        <div className="bg-white rounded-t-2xl border border-slate-100 border-b-0 px-5 flex items-center gap-6">
-          {[
-            { id: 'configure', label: 'Configure', icon: Settings, badge: 1 },
-            { id: 'matches', label: 'Job Matches', icon: Briefcase, badge: jobs.length },
-          ].map(t => {
-            const active = activeMainTab === t.id;
-            return (
-              <button key={t.id} onClick={() => setActiveMainTab(t.id)} className={`py-4 px-1 relative flex items-center gap-2 text-sm font-bold transition-colors ${active ? 'text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}>
-                <t.icon className="w-4 h-4" /> {t.label}
-                <motion.span
-                  className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-extrabold transition-colors ${active ? 'bg-[#FF6B47] text-white' : 'bg-slate-100 text-slate-600'}`}
-                >{t.badge}</motion.span>
-                {active && (
-                  <motion.div
-                    layoutId="job-tab-underline"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF6B47] rounded-full"
-                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                  />
-                )}
-              </button>
-            );
-          })}
+      {/* Why Our Search is Different */}
+      <section className="py-16 bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div className="text-center mb-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, ease }}>
+            <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 mb-3">Why we find jobs you can't find yourself</h2>
+            <p className="text-slate-500 text-lg max-w-2xl mx-auto">Most job boards show the same listings. We go deeper — including roles that aren't publicly posted yet.</p>
+          </motion.div>
+          <motion.div className="grid md:grid-cols-3 gap-6" variants={stagger(0.1)} initial="hidden" whileInView="show" viewport={{ once: true }}>
+            {[
+              { icon: Filter, color: '#0D6B4F', bg: '#E8F5F0', title: 'Quality over quantity', desc: 'We don\'t dump 200 listings on you. Every role we send is verified, active, and matched to your specific skills and experience level.' },
+              { icon: Building2, color: '#4F8EF7', bg: '#EEF4FF', title: 'Hidden market access', desc: 'Up to 70% of jobs are never posted publicly. We tap into recruiter networks and company career pages before listings go live.' },
+              { icon: TrendingUp, color: '#FF6B47', bg: '#FFF3EE', title: 'Better application odds', desc: 'With fewer, better-matched applications, candidates using our service get 4× more callbacks than mass-applying on their own.' },
+            ].map(({ icon: Icon, color, bg, title, desc }) => (
+              <motion.div key={title} variants={fadeUp} className="p-6 rounded-2xl border border-slate-100" style={{ background: bg }}>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: color + '22' }}>
+                  <Icon className="w-6 h-6" style={{ color }} />
+                </div>
+                <div className="font-extrabold text-slate-900 text-lg mb-2">{title}</div>
+                <p className="text-slate-600 text-sm leading-relaxed">{desc}</p>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
+      </section>
 
-        {activeMainTab === 'configure' && (
-          <div className="bg-white rounded-b-2xl border border-slate-100 p-6 grid lg:grid-cols-[1fr_400px] gap-6">
-            {/* Candidate Profile */}
-            <div>
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center">
-                    <User className="w-5 h-5 text-[#4F8EF7]" />
-                  </div>
-                  <h2 className="text-xl font-extrabold text-slate-900">Candidate Profile</h2>
+      {/* Our Process */}
+      <section className="py-16 bg-slate-50">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div className="text-center mb-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, ease }}>
+            <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 mb-3">How we find your next role</h2>
+            <p className="text-slate-500 text-lg">A hands-on search — done for you by our team</p>
+          </motion.div>
+          <div className="space-y-4">
+            {steps.map(({ step, title, desc }, i) => (
+              <motion.div key={step} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: i * 0.07, ease }}
+                className="flex gap-5 p-5 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[#0D6B4F] text-white flex items-center justify-center font-extrabold text-sm">{step}</div>
+                <div className="pt-1">
+                  <div className="font-bold text-slate-900 mb-1">{title}</div>
+                  <div className="text-slate-500 text-sm leading-relaxed">{desc}</div>
                 </div>
-                {profileEditing ? (
-                  <button onClick={saveProfile} className="px-4 py-2 bg-[#0D6B4F] hover:bg-[#0a5a42] text-white rounded-lg text-sm font-bold flex items-center gap-1.5">
-                    <Check className="w-4 h-4" /> Save Profile
-                  </button>
-                ) : (
-                  <button onClick={() => setProfileEditing(true)} className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 flex items-center gap-1.5">
-                    <Edit3 className="w-4 h-4" /> Edit Profile
-                  </button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-5 mb-6">
-                <ProfileField icon={User} label="Candidate Name" value={profile.name} editing={profileEditing} onChange={(v) => setProfile({ ...profile, name: v })} />
-                <ProfileField icon={Mail} label="Email" value={profile.email} editing={profileEditing} onChange={(v) => setProfile({ ...profile, email: v })} />
-                <ProfileField icon={Briefcase} label="Years of Experience" value={profile.yearsExperience} editing={profileEditing} onChange={(v) => setProfile({ ...profile, yearsExperience: v })} type="number" />
-                <div>
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                    <TrendingUp className="w-3.5 h-3.5" /> Seniority Level
-                  </div>
-                  {profileEditing ? (
-                    <select value={profile.seniorityLevel} onChange={(e) => setProfile({ ...profile, seniorityLevel: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#FF6B47]">
-                      {['Entry Level', 'Mid Level', 'Senior Level', 'Staff', 'Principal', 'Director', 'Executive'].map(l => <option key={l}>{l}</option>)}
-                    </select>
-                  ) : (
-                    <div className="text-sm font-semibold text-slate-900">{profile.seniorityLevel}</div>
-                  )}
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <ProfileField label="Current Title" value={profile.currentTitle} editing={profileEditing} onChange={(v) => setProfile({ ...profile, currentTitle: v })} />
-              </div>
-
-              <div className="mb-6">
-                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Target Job Titles</div>
-                {profileEditing ? (
-                  <TagEditor tags={profile.targetJobTitles} onChange={(v) => setProfile({ ...profile, targetJobTitles: v })} placeholder="Add a job title..." color="#4F8EF7" />
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {profile.targetJobTitles.length ? profile.targetJobTitles.map(t => <TagPill key={t} color="#4F8EF7">{t}</TagPill>) : <span className="text-sm text-slate-400">No target titles set</span>}
-                  </div>
-                )}
-              </div>
-
-              <div className="mb-6">
-                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Skills</div>
-                {profileEditing ? (
-                  <TagEditor tags={profile.skills} onChange={(v) => setProfile({ ...profile, skills: v })} placeholder="Add a skill..." color="#0D6B4F" />
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {profile.skills.length ? profile.skills.map(s => <TagPill key={s} color="#0D6B4F">{s}</TagPill>) : <span className="text-sm text-slate-400">No skills set</span>}
-                  </div>
-                )}
-              </div>
-
-              <div className="mb-6">
-                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Technologies</div>
-                {profileEditing ? (
-                  <TagEditor tags={profile.technologies} onChange={(v) => setProfile({ ...profile, technologies: v })} placeholder="Add a technology..." color="#7C3AED" />
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {profile.technologies.length ? profile.technologies.map(s => <TagPill key={s} color="#7C3AED">{s}</TagPill>) : <span className="text-sm text-slate-400">No technologies set</span>}
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-5">
-                <ProfileField icon={MapPin} label="Preferred Location" value={profile.preferredLocation} editing={profileEditing} onChange={(v) => setProfile({ ...profile, preferredLocation: v })} />
-                <div>
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                    <Home className="w-3.5 h-3.5" /> Remote Preference
-                  </div>
-                  {profileEditing ? (
-                    <select value={profile.remotePreference} onChange={(e) => setProfile({ ...profile, remotePreference: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#FF6B47]">
-                      {['Unknown', 'Remote Only', 'Hybrid', 'On-site', 'Flexible'].map(l => <option key={l}>{l}</option>)}
-                    </select>
-                  ) : (
-                    <div className="text-sm font-semibold text-slate-900">{profile.remotePreference}</div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Search Filters */}
-            <div className="bg-slate-50 rounded-2xl p-5 h-fit lg:sticky lg:top-20">
-              <div className="flex items-center gap-2 mb-4">
-                <Filter className="w-5 h-5 text-[#FF6B47]" />
-                <h2 className="text-lg font-extrabold text-slate-900">Search Filters</h2>
-              </div>
-
-              <Accordion title="Specific Locations" icon={Globe}>
-                <div className="flex gap-2 mb-3">
-                  <input value={locationInput} onChange={(e) => setLocationInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addLocation())} placeholder="Search cities, countries..." className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#FF6B47]" />
-                  <button onClick={addLocation} className="w-9 h-9 rounded-lg bg-[#4F8EF7] text-white flex items-center justify-center hover:bg-[#3b7be0]"><Search className="w-4 h-4" /></button>
-                </div>
-                <div className="text-[11px] text-slate-500 mb-2">Search for specific cities, states, or regions</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {filters.specificLocations.map(l => (
-                    <TagPill key={l} color="#4F8EF7" onRemove={() => setFilters({ ...filters, specificLocations: filters.specificLocations.filter(x => x !== l) })}>{l}</TagPill>
-                  ))}
-                </div>
-              </Accordion>
-
-              <Accordion title="Country" icon={MapPin} badge={filters.country ? filters.country.substring(0,2).toUpperCase() : null}>
-                <div className="text-xs text-slate-500 mb-2">Selected:</div>
-                <div className="mb-2">
-                  <TagPill color="#4F8EF7" onRemove={() => setFilters({ ...filters, country: '' })}>{filters.country}</TagPill>
-                </div>
-                <div className="text-[11px] text-slate-500 mb-2">Change country:</div>
-                <select value={filters.country} onChange={(e) => setFilters({ ...filters, country: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#FF6B47]">
-                  <option value="">Select country...</option>
-                  {COUNTRIES.map(c => <option key={c}>{c}</option>)}
-                </select>
-              </Accordion>
-
-              <Accordion title={`Posted Within`} icon={Calendar} defaultOpen={true}>
-                <div className="space-y-1">
-                  {POSTED_OPTIONS.map(opt => (
-                    <button key={opt} onClick={() => setFilters({ ...filters, postedWithin: opt })} className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition ${filters.postedWithin === opt ? 'bg-[#4F8EF7] text-white font-bold' : 'hover:bg-white text-slate-700'}`}>
-                      <span>{opt}</span>
-                      {filters.postedWithin === opt && <Check className="w-4 h-4" strokeWidth={3} />}
-                    </button>
-                  ))}
-                </div>
-              </Accordion>
-
-              <Accordion title="Remote" icon={Home}>
-                <div className="grid grid-cols-3 gap-2">
-                  {[['any', 'Any'], ['yes', 'Yes'], ['no', 'No']].map(([v, l]) => (
-                    <button key={v} onClick={() => setFilters({ ...filters, remote: v })} className={`py-2 rounded-lg text-sm font-bold border transition ${filters.remote === v ? 'bg-[#4F8EF7] text-white border-[#4F8EF7]' : 'bg-white border-slate-200 text-slate-700 hover:border-[#4F8EF7]'}`}>
-                      {l}
-                    </button>
-                  ))}
-                </div>
-              </Accordion>
-
-              <Accordion title="Is Easy Apply" icon={Zap}>
-                <div className="grid grid-cols-3 gap-2">
-                  {[['any', 'Any'], ['yes', 'Yes'], ['no', 'No']].map(([v, l]) => (
-                    <button key={v} onClick={() => setFilters({ ...filters, easyApply: v })} className={`py-2 rounded-lg text-sm font-bold border transition ${filters.easyApply === v ? 'bg-[#4F8EF7] text-white border-[#4F8EF7]' : 'bg-white border-slate-200 text-slate-700 hover:border-[#4F8EF7]'}`}>
-                      {l}
-                    </button>
-                  ))}
-                </div>
-              </Accordion>
-
-              <Accordion title="Includes Reports To Role" icon={Users} defaultOpen={false}>
-                <div className="grid grid-cols-3 gap-2">
-                  {[['any', 'Any'], ['yes', 'Yes'], ['no', 'No']].map(([v, l]) => (
-                    <button key={v} onClick={() => setFilters({ ...filters, reportsToRole: v })} className={`py-2 rounded-lg text-sm font-bold border transition ${filters.reportsToRole === v ? 'bg-[#4F8EF7] text-white border-[#4F8EF7]' : 'bg-white border-slate-200 text-slate-700 hover:border-[#4F8EF7]'}`}>
-                      {l}
-                    </button>
-                  ))}
-                </div>
-              </Accordion>
-
-              <button onClick={runSearch} disabled={loading} className="w-full mt-5 py-3 rounded-xl bg-[#FF6B47] hover:bg-[#ff5630] disabled:opacity-60 text-white font-bold flex items-center justify-center gap-2">
-                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Searching...</> : <><Search className="w-4 h-4" /> Apply Filters & Search</>}
-              </button>
-              {error && <div className="mt-2 text-xs text-red-500">{error}</div>}
-            </div>
+              </motion.div>
+            ))}
           </div>
-        )}
+        </div>
+      </section>
 
-        {activeMainTab === 'matches' && (
-          <div className="bg-white rounded-b-2xl border border-slate-100 p-6">
-            {/* Status */}
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F5F0] text-[#0D6B4F] text-xs font-bold uppercase tracking-wider">
-                  <Check className="w-3.5 h-3.5" /> {isDemoData ? 'Demo Results' : 'Live Results'}
+      {/* What You Get */}
+      <section className="py-16 bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, ease }}>
+              <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 mb-4 leading-tight">Jobs that fit you — ready to apply</h2>
+              <p className="text-slate-500 mb-8 leading-relaxed">
+                No more hours lost on job boards. No more applying to roles you're not right for. Just a focused list of genuine opportunities delivered straight to you.
+              </p>
+              <div className="space-y-3">
+                {deliverables.map(d => (
+                  <div key={d} className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-[#0D6B4F] flex-shrink-0 mt-0.5" strokeWidth={2.5} />
+                    <span className="text-slate-700 text-sm font-medium">{d}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, ease }}
+              className="bg-gradient-to-br from-[#0F3D2E] to-[#1a5c45] rounded-3xl p-8 text-white">
+              <div className="flex items-center gap-3 mb-8">
+                <Briefcase className="w-8 h-8 text-[#FF6B47]" />
+                <div>
+                  <div className="font-extrabold text-lg">Pro vs Premium</div>
+                  <div className="text-white/60 text-sm">Choose your match volume</div>
                 </div>
-                <div className="text-sm text-slate-600 mt-1">{jobs.length} jobs · {profile.targetJobTitles[0] || 'Target role'} · {filters.country}</div>
               </div>
-              <div className="flex items-center gap-2">
-                <button onClick={exportCsv} className="px-4 py-2 rounded-lg bg-white border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5">
-                  <Download className="w-4 h-4" /> Excel
-                </button>
-                <button onClick={printJobs} className="px-4 py-2 rounded-lg bg-white border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5">
-                  <Download className="w-4 h-4" /> PDF
-                </button>
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-              {[[excellent, 'Excellent Match', '#0D6B4F', '#E8F5F0'], [good, 'Good Match', '#4F8EF7', '#EFF6FF'], [fair, 'Fair Match', '#F59E0B', '#FFFBEB'], [jobs.length, 'Total Jobs', '#0F3D2E', '#F1F5F9']].map(([v, l, c, bg]) => (
-                <div key={l} className="rounded-xl p-3" style={{ background: bg, borderLeft: `3px solid ${c}` }}>
-                  <div className="text-2xl font-extrabold" style={{ color: c }}>{v}</div>
-                  <div className="text-xs font-semibold text-slate-600">{l}</div>
+              {[
+                { plan: 'Pro', jobs: '15–20 jobs', color: '#4F8EF7', detail: 'High-quality curated matches from top job boards and company career pages. Best for focused, targeted applications.' },
+                { plan: 'Premium', jobs: '30–40 jobs', color: '#FF6B47', detail: 'Wider search including hidden market roles, recruiter contacts, and deep company research. Best for comprehensive campaigns.' },
+              ].map(({ plan, jobs, color, detail }) => (
+                <div key={plan} className="mb-6 last:mb-0 p-4 rounded-xl bg-white/10 border border-white/10">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Star className="w-4 h-4" style={{ color }} />
+                    <span className="font-bold text-sm">{plan}</span>
+                    <span className="ml-auto font-extrabold text-sm" style={{ color }}>{jobs}</span>
+                  </div>
+                  <div className="text-white/65 text-xs leading-relaxed">{detail}</div>
                 </div>
               ))}
-            </div>
-
-            {/* Filter bar */}
-            <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center mb-5">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search by title or company..." className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#FF6B47] focus:ring-2 focus:ring-[#FF6B47]/10" />
+              <div className="mt-6 pl-4 border-l-2 border-[#FF6B47]/50">
+                <div className="font-bold text-sm mb-1">Both plans include</div>
+                <div className="text-white/65 text-xs leading-relaxed">Direct links, match reasoning, ATS score prediction per role, and company insights — so every application you send is a confident one.</div>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                {sites.map(s => {
-                  const cfg = s === 'all' ? { color: '#0F3D2E', label: 'All' } : siteCfg[s];
-                  const active = siteFilter === s;
-                  return (
-                    <button key={s} onClick={() => setSiteFilter(s)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all" style={{ borderColor: active ? cfg.color : '#E2E8F0', background: active ? cfg.color + '15' : 'white', color: active ? cfg.color : '#64748B' }}>
-                      {s !== 'all' && <div className="w-3.5 h-3.5 rounded flex items-center justify-center text-[8px] font-extrabold text-white" style={{ background: siteCfg[s].color }}>{siteCfg[s].short}</div>}
-                      {cfg.label}
-                      <span className="ml-0.5 px-1.5 py-0 rounded-full bg-white/50 text-[10px]">{counts[s]}</span>
-                    </button>
-                  );
-                })}
-                <div className="flex items-center gap-1 ml-2 border-l border-slate-200 pl-2">
-                  {[['cards', LayoutGrid], ['table', List]].map(([m, Icon]) => (
-                    <button key={m} onClick={() => setViewMode(m)} className={`w-8 h-8 rounded-lg flex items-center justify-center border transition ${viewMode === m ? 'bg-[#FFF3EE] border-[#FF6B47] text-[#FF6B47]' : 'bg-white border-slate-200 text-slate-400 hover:text-slate-600'}`}>
-                      <Icon className="w-4 h-4" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Jobs list */}
-            <motion.div
-              className="space-y-3"
-              initial="hidden"
-              animate="show"
-              variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
-            >
-              {filtered.map((job, idx) => {
-                const cfg = priorityCfg[job.priority] || priorityCfg.GOOD;
-                const exp = expanded === job.id;
-                const saved = savedJobs.has(job.id);
-                return (
-                  <motion.div
-                    key={job.id}
-                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } } }}
-                    whileHover={{ y: -3, boxShadow: '0 12px 28px rgba(0,0,0,0.09)' }}
-                    transition={{ type: 'spring', stiffness: 320, damping: 24 }}
-                    onClick={() => setExpanded(exp ? null : job.id)}
-                    className="bg-white rounded-2xl border border-slate-100 cursor-pointer"
-                    style={{ borderLeft: `4px solid ${cfg.color}` }}
-                  >
-                    <div className="p-5">
-                      <div className="flex items-start gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center flex-wrap gap-2 mb-2">
-                            <span className="text-xs font-bold text-slate-400">#{idx + 1}</span>
-                            <h3 className="text-lg font-extrabold text-slate-900">{job.title}</h3>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase" style={{ background: cfg.bg, color: cfg.color }}>{job.priority}</span>
-                            {job.is_remote && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#F3E8FF] text-[#7C3AED] text-[10px] font-bold uppercase"><Home className="w-3 h-3" /> Remote</span>}
-                          </div>
-                          <div className="flex items-center gap-3 mb-3 flex-wrap">
-                            <div className="font-bold text-slate-800">{job.company}</div>
-                            <StarRating rating={job.company_rating || 4.0} />
-                            <SourceBadge site={job.site} />
-                          </div>
-                          <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-600 mb-3">
-                            <div className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-slate-400" /> {job.location}</div>
-                            <div className="flex items-center gap-1"><Briefcase className="w-3.5 h-3.5 text-slate-400" /> {job.job_type || 'Full-time'}</div>
-                            <div className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-slate-400" /> {job.date_posted}</div>
-                            {job.min_amount && <div className="flex items-center gap-1 font-bold text-[#0D6B4F]"><DollarSign className="w-3.5 h-3.5" /> {job.min_amount}-{job.max_amount} {job.currency}</div>}
-                          </div>
-                          <div className="flex items-center flex-wrap gap-1.5">
-                            {(job.skills || []).map(s => <span key={s} className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[11px] font-semibold">{s}</span>)}
-                          </div>
-                        </div>
-                        <div className="text-center flex-shrink-0">
-                          <div className="text-3xl font-black" style={{ color: cfg.color }}>{job.score}%</div>
-                          <div className="text-[10px] font-bold" style={{ color: cfg.color }}>MATCH</div>
-                        </div>
-                      </div>
-                      <AnimatePresence>
-                        {exp && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                            style={{ overflow: 'hidden' }}
-                          >
-                            <div className="mt-4 pt-4 border-t border-slate-100">
-                              <p className="text-sm text-slate-700 leading-relaxed mb-4">{job.description}</p>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <a href={job.job_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-bold hover:opacity-90 transition-opacity" style={{ background: siteCfg[job.site]?.color || '#64748B' }}>
-                                  Apply on {siteCfg[job.site]?.label || job.site} <ArrowRight className="w-3.5 h-3.5" />
-                                </a>
-                                <button onClick={e => { e.stopPropagation(); toggleSave(job); }} className={`px-4 py-2 rounded-lg border text-sm font-bold transition-colors ${saved ? 'bg-[#FFF3EE] border-[#FF6B47] text-[#FF6B47]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}>
-                                  {saved ? '★ Saved' : '☆ Save'}
-                                </button>
-                                <button onClick={e => { e.stopPropagation(); navigate('/jd-tailor'); }} className="px-4 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition-colors">Tailor Resume</button>
-                              </div>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </motion.div>
-                );
-              })}
             </motion.div>
-
-            {!filtered.length && (
-              <div className="p-12 text-center text-slate-500">
-                <Briefcase className="w-10 h-10 mx-auto mb-3 text-slate-300" />
-                No jobs found. Adjust filters and search again.
-              </div>
-            )}
           </div>
-        )}
-      </div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section className="py-16 bg-slate-50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div className="text-center mb-10" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, ease }}>
+            <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 mb-3">Start your search today</h2>
+            <p className="text-slate-500 text-lg">One-time payment · More jobs with Premium</p>
+          </motion.div>
+          <motion.div className="grid md:grid-cols-2 gap-6" variants={stagger(0.1)} initial="hidden" whileInView="show" viewport={{ once: true }}>
+            {plans.map(plan => (
+              <motion.div key={plan.id} variants={fadeUp}
+                whileHover={{ y: -6, boxShadow: plan.highlighted ? '0 24px 60px rgba(15,61,46,0.25)' : '0 20px 48px rgba(0,0,0,0.09)' }}
+                transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+                className={`relative rounded-3xl p-8 border-2 ${plan.highlighted ? 'bg-[#0F3D2E] border-[#0F3D2E] text-white shadow-xl' : 'bg-white border-slate-100'}`}>
+                {plan.badge && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#FF6B47] text-white text-xs font-bold uppercase tracking-wider shadow">{plan.badge}</div>
+                )}
+                <div className="mb-6">
+                  <div className="text-sm font-bold uppercase tracking-wider mb-2 text-[#FF6B47]">{plan.name}</div>
+                  <div className="flex items-baseline gap-2 mb-0.5">
+                    <span className="text-4xl font-extrabold">{plan.price}</span>
+                    <span className={`text-base font-semibold line-through ${plan.highlighted ? 'text-white/35' : 'text-slate-300'}`}>{plan.originalPrice}</span>
+                    <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${plan.highlighted ? 'bg-[#FF6B47]/20 text-[#FF6B47]' : 'bg-[#0D6B4F]/10 text-[#0D6B4F]'}`}>{plan.jobs} jobs</span>
+                  </div>
+                  <div className={`text-[11px] font-bold uppercase tracking-wider mb-3 ${plan.highlighted ? 'text-white/50' : 'text-slate-400'}`}>One-Time Payment · No Subscription</div>
+                  <p className={`text-sm leading-relaxed ${plan.highlighted ? 'text-white/75' : 'text-slate-500'}`}>{plan.desc}</p>
+                </div>
+                <Link to="/pricing"
+                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-full font-bold mb-6 transition-colors ${plan.highlighted ? 'bg-[#FF6B47] hover:bg-[#ff5630] text-white' : 'bg-[#0F3D2E] hover:bg-[#1a5c45] text-white'}`}>
+                  {plan.cta} <ArrowRight className="w-4 h-4" />
+                </Link>
+                <ul className="space-y-2.5">
+                  {plan.features.map(f => (
+                    <li key={f} className="flex items-start gap-2 text-sm">
+                      <CheckCircle2 className={`w-4 h-4 flex-shrink-0 mt-0.5 ${plan.highlighted ? 'text-[#FF6B47]' : 'text-[#0D6B4F]'}`} strokeWidth={2.5} />
+                      <span className={plan.highlighted ? 'text-white/88' : 'text-slate-700'}>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            ))}
+          </motion.div>
+          <motion.div className="text-center mt-8 flex flex-wrap items-center justify-center gap-6 text-sm text-slate-500" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
+            <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-[#0D6B4F]" /> Secure payment</div>
+            <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-[#FF6B47]" /> 24–48 hr delivery</div>
+            <div className="flex items-center gap-2"><Zap className="w-4 h-4 text-[#7C3AED]" /> Book your call instantly</div>
+          </motion.div>
+        </div>
+      </section>
     </div>
   );
 };

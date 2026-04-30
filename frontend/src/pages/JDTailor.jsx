@@ -1,555 +1,221 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
-import { useAuth } from '../context/AuthContext';
-import { mockSampleJD } from '../mock';
-import { jdApi } from '../lib/api';
-import { FileText, Target, Briefcase, Sparkles, ArrowRight, Check, Download, RotateCw, X, Edit3, Zap, Upload, Lock } from 'lucide-react';
+import { CheckCircle2, FileText, ArrowRight, Sparkles, Target, Zap, Clock, ShieldCheck, BarChart2, PenLine, Search } from 'lucide-react';
 
 const ease = [0.22, 1, 0.36, 1];
+const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0, transition: { duration: 0.5, ease } } };
+const stagger = (d = 0.08) => ({ hidden: {}, show: { transition: { staggerChildren: d } } });
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.45, ease } },
-};
+const steps = [
+  { step: '01', title: 'Share Your Resume + Job Description', desc: 'After your consultation call, paste the JD you are applying to alongside your resume. Works for any role, any company.' },
+  { step: '02', title: 'JD Keyword Mapping', desc: 'We extract every requirement, skill, and keyword from the JD — including hidden requirements recruiters look for but don\'t always list explicitly.' },
+  { step: '03', title: 'Gap Analysis & Match Score', desc: 'We score how well your current resume matches the JD and identify every section that needs to be upgraded to get you past screening.' },
+  { step: '04', title: 'Expert Resume Rewrite', desc: 'Our specialist rewrites your resume to align perfectly with the JD — same tone, same keywords, same priorities the hiring team has listed.' },
+  { step: '05', title: 'Tailored Resume Delivered', desc: 'You receive your JD-tailored resume within 24–48 hours — ready to apply with confidence, knowing you match exactly what they are looking for.' },
+];
 
-const stagger = (d = 0.08) => ({
-  hidden: {},
-  show:   { transition: { staggerChildren: d } },
-});
+const deliverables = [
+  'JD match score before and after tailoring',
+  'Full list of JD keywords added to your resume',
+  'Professional Summary rewritten to mirror the JD',
+  'Skills section re-ordered and expanded to match requirements',
+  'Experience bullets rewritten to reflect JD priorities',
+  'Tone aligned to the company culture from the JD',
+  'Cover letter talking points (bonus)',
+  'Tailored resume delivered as .docx',
+];
 
-function MatchRing({ score, size = 100 }) {
-  const r = size / 2 - 6;
-  const circ = 2 * Math.PI * r;
-  const offset = circ - (score / 100) * circ;
-  const color = score >= 90 ? '#0D6B4F' : score >= 75 ? '#4F8EF7' : '#F59E0B';
-  return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size/2} cy={size/2} r={r} stroke="#F1F5F9" strokeWidth="6" fill="none" />
-        <circle cx={size/2} cy={size/2} r={r} stroke={color} strokeWidth="6" fill="none" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset} style={{ transition: 'stroke-dashoffset 1.2s ease-out' }} />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="text-[9px] font-bold tracking-wider text-slate-500">JD MATCH</div>
-        <div className="text-2xl font-black" style={{ color }}>{score}%</div>
-        <div className="text-[9px] font-bold" style={{ color }}>EXCELLENT</div>
-      </div>
-    </div>
-  );
-}
-
-const tabs = ['JD Match', 'Changes Made', 'Preview', 'Download'];
-
-const JD_SESSION_KEY = 'ik_jd_session';
+const plans = [
+  {
+    id: 'pro',
+    name: 'Pro',
+    price: '₹499',
+    originalPrice: '₹699',
+    desc: 'ATS Score + JD Tailoring + 15–20 curated job matches',
+    features: ['Full ATS Score Report', 'Expert Resume Rewrite', 'JD Tailoring for 1 Job Description', '15–20 Curated Job Matches', '24–48 hr Delivery', 'Priority Support'],
+    cta: 'Get Pro',
+    highlighted: false,
+    badge: 'Limited Offer',
+  },
+  {
+    id: 'premium',
+    name: 'Premium',
+    price: '₹899',
+    originalPrice: '₹1,299',
+    desc: 'Everything in Pro — more job matches, deeper search',
+    features: ['Everything in Pro', '30–40 Curated Job Matches', 'Deeper Company & Recruiter Research', 'Priority 24hr Delivery', 'Direct Recruiter Outreach Tips', 'Dedicated Support'],
+    cta: 'Get Premium',
+    highlighted: true,
+    badge: 'Best Value',
+  },
+];
 
 const JDTailor = () => {
-  const { user } = useAuth();
-  const isPro = user && (user.plan === 'pro' || user.plan === 'premium');
+  return (
+    <div className="min-h-screen bg-white overflow-hidden">
+      <Navbar />
 
-  const saved = (() => { try { return JSON.parse(sessionStorage.getItem(JD_SESSION_KEY) || 'null'); } catch { return null; } })();
+      {/* Hero */}
+      <section className="pt-14 pb-14 bg-gradient-to-b from-[#EEF4FF] via-[#F8FAFF] to-white">
+        <motion.div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center" variants={stagger(0.09)} initial="hidden" animate="show">
+          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 text-[#4F8EF7] text-xs font-bold uppercase tracking-wider mb-6">
+            <PenLine className="w-3.5 h-3.5" /> Done-For-You JD Tailoring
+          </motion.div>
+          <motion.h1 variants={fadeUp} className="text-4xl lg:text-6xl font-extrabold text-slate-900 tracking-tight mb-5 leading-tight">
+            Generic resumes don't get interviews.
+            <span className="text-[#4F8EF7]"> Tailored ones do.</span>
+          </motion.h1>
+          <motion.p variants={fadeUp} className="text-lg text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed">
+            Every job description is different. Recruiters spend an average of 7 seconds scanning your resume — if it doesn't mirror their exact language and priorities, it goes in the bin. We make sure yours doesn't.
+          </motion.p>
+          <motion.div variants={fadeUp} className="flex flex-wrap items-center justify-center gap-4">
+            {[['1 JD', 'Per Tailoring Session'], ['24–48 hrs', 'Delivery Time'], ['95%+', 'Keyword Match Rate'], ['7 sec', 'Average Recruiter Scan']].map(([v, l]) => (
+              <div key={l} className="flex items-center gap-2 bg-white border border-slate-200 rounded-full px-4 py-2 shadow-sm">
+                <span className="font-extrabold text-[#4F8EF7] text-sm">{v}</span>
+                <span className="text-slate-600 text-sm">{l}</span>
+              </div>
+            ))}
+          </motion.div>
+        </motion.div>
+      </section>
 
-  const [jd, setJd] = useState(saved?.jd || '');
-  const [tailoring, setTailoring] = useState(false);
-  const [tailored, setTailored] = useState(!!saved?.data);
-  const [activeTab, setActiveTab] = useState(0);
-  const [resumeFile, setResumeFile] = useState(null);
-  const [resumeFileName, setResumeFileName] = useState(saved?.resumeFileName || null);
-  const [data, setData] = useState(saved?.data || null);
-  const [error, setError] = useState('');
-  const [downloading, setDownloading] = useState(false);
+      {/* Why Tailoring Matters */}
+      <section className="py-16 bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div className="text-center mb-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, ease }}>
+            <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 mb-3">Why a tailored resume is a different league</h2>
+            <p className="text-slate-500 text-lg max-w-2xl mx-auto">Hiring managers read hundreds of applications. A resume that speaks their language stands out immediately.</p>
+          </motion.div>
+          <motion.div className="grid md:grid-cols-3 gap-6" variants={stagger(0.1)} initial="hidden" whileInView="show" viewport={{ once: true }}>
+            {[
+              { icon: BarChart2, color: '#4F8EF7', bg: '#EEF4FF', title: 'Higher match score', desc: 'Tailored resumes score 40–60% higher in ATS matching algorithms because they use the exact language from the JD.' },
+              { icon: Target, color: '#FF6B47', bg: '#FFF3EE', title: 'Recruiter reads yours first', desc: 'A resume that reflects the JD\'s tone and priorities signals you\'ve done your research — and shows you actually want this specific role.' },
+              { icon: Search, color: '#0D6B4F', bg: '#E8F5F0', title: 'Beats the competition fast', desc: 'Most candidates send the same resume everywhere. A tailored one is rare — and it shows in the interview call rate immediately.' },
+            ].map(({ icon: Icon, color, bg, title, desc }) => (
+              <motion.div key={title} variants={fadeUp} className="p-6 rounded-2xl border border-slate-100" style={{ background: bg }}>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: color + '22' }}>
+                  <Icon className="w-6 h-6" style={{ color }} />
+                </div>
+                <div className="font-extrabold text-slate-900 text-lg mb-2">{title}</div>
+                <p className="text-slate-600 text-sm leading-relaxed">{desc}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
 
-  const handleTailor = async () => {
-    if (jd.trim().length < 50) return;
-    if (!resumeFile) { setError('Please upload your resume first'); return; }
-    setTailoring(true);
-    setError('');
-    try {
-      const result = await jdApi.tailorFile(resumeFile, jd);
-      const normalized = {
-        candidateName: result.candidate_name || 'Your Name',
-        matchScore: result.match_score || result.matchScore || 0,
-        keywordsAdded: result.keywords_added || result.keywordsAdded || [],
-        keywordsPresent: result.keywords_present || result.keywordsPresent || [],
-        sectionsUpdated: result.sections_updated || result.sectionsUpdated || [],
-        unchangedSections: result.unchanged_sections || result.unchangedSections || [],
-        tailoredSummary: result.tailored_summary || '',
-        tailoredSkills: result.tailored_skills || [],
-        jobTitle: result.job_title || 'Job Title',
-        company: result.company || '',
-        originalResumeText: result.original_resume_text || '',
-      };
-      setData(normalized);
-      setTailored(true);
-      setActiveTab(0);
-      sessionStorage.setItem(JD_SESSION_KEY, JSON.stringify({ data: normalized, jd, resumeFileName: resumeFile.name }));
-    } catch (e) {
-      if (e.code === 'ECONNABORTED' || e.message?.includes('timeout')) {
-        setError('Analysis timed out. The AI is under heavy load — please try again in a moment.');
-      } else {
-        const detail = e.response?.data?.detail || '';
-        setError(detail || 'Tailoring failed. Please try again.');
-      }
-    } finally {
-      setTailoring(false);
-    }
-  };
+      {/* Our Process */}
+      <section className="py-16 bg-slate-50">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div className="text-center mb-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, ease }}>
+            <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 mb-3">How we tailor your resume</h2>
+            <p className="text-slate-500 text-lg">Done by a human expert — not auto-generated filler</p>
+          </motion.div>
+          <div className="space-y-4">
+            {steps.map(({ step, title, desc }, i) => (
+              <motion.div key={step} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: i * 0.07, ease }}
+                className="flex gap-5 p-5 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[#4F8EF7] text-white flex items-center justify-center font-extrabold text-sm">{step}</div>
+                <div className="pt-1">
+                  <div className="font-bold text-slate-900 mb-1">{title}</div>
+                  <div className="text-slate-500 text-sm leading-relaxed">{desc}</div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-  const loadSample = () => setJd(mockSampleJD);
-  const reset = () => {
-    setTailored(false);
-    setJd('');
-    setData(null);
-    setError('');
-    setResumeFileName(null);
-    sessionStorage.removeItem(JD_SESSION_KEY);
-  };
-
-  const SKIP_SECTIONS = new Set([
-    'PROFESSIONAL SUMMARY', 'SUMMARY', 'OBJECTIVE', 'CAREER OBJECTIVE',
-    'KEY SKILLS', 'SKILLS', 'TECHNICAL SKILLS', 'CORE COMPETENCIES', 'CORE SKILLS',
-  ]);
-
-  const parseOriginalSections = (text) => {
-    const lines = (text || '').split('\n');
-    const sections = [];
-    let currentTitle = null;
-    let currentLines = [];
-    lines.forEach(line => {
-      const t = line.trim();
-      if (!t) return;
-      const isHeader = t === t.toUpperCase() && t.length >= 3 && t.length <= 60 && /^[A-Z]/.test(t) && t.replace(/[\s\-\/]/g, '').length > 2;
-      if (isHeader) {
-        if (currentTitle) sections.push({ title: currentTitle, content: currentLines.join('\n') });
-        currentTitle = t;
-        currentLines = [];
-      } else {
-        currentLines.push(t);
-      }
-    });
-    if (currentTitle) sections.push({ title: currentTitle, content: currentLines.join('\n') });
-    return sections;
-  };
-
-  const downloadDocx = async () => {
-    if (!data) return;
-    setDownloading(true);
-    try {
-      const { default: api } = await import('../lib/api');
-      const res = await api.post('/jd/download-docx', {
-        candidate_name: data.candidateName,
-        job_title: data.jobTitle,
-        company: data.company,
-        tailored_summary: data.tailoredSummary,
-        tailored_skills: data.tailoredSkills,
-        original_resume_text: data.originalResumeText,
-      }, { responseType: 'blob' });
-      const url = URL.createObjectURL(new Blob([res.data]));
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${(data.jobTitle || 'tailored-resume').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.docx`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      setError('Download failed. Please try again.');
-    } finally {
-      setDownloading(false);
-    }
-  };
-
-  if (!isPro) {
-    return (
-      <div className="min-h-screen bg-slate-50 overflow-hidden">
-        <Navbar />
-        <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-          <motion.div
-            className="bg-white rounded-3xl border border-slate-100 shadow-xl p-10"
-            initial={{ opacity: 0, y: 32, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.5, ease }}
-          >
-            <motion.div
-              className="w-20 h-20 rounded-full bg-[#FFF3EE] flex items-center justify-center mx-auto mb-6"
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              <Lock className="w-9 h-9 text-[#FF6B47]" />
-            </motion.div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFF3EE] text-[#FF6B47] text-xs font-bold uppercase tracking-wider mb-4">
-              Pro Feature
-            </div>
-            <h1 className="text-3xl font-extrabold text-slate-900 mb-3">JD Tailoring</h1>
-            <p className="text-slate-600 mb-2">AI rewrites your resume to match any job description — keywords, skills, tone, and priorities aligned automatically.</p>
-            <p className="text-slate-500 text-sm mb-8">This feature is available on the <span className="font-bold text-[#FF6B47]">Pro plan</span> and above.</p>
-            <motion.div
-              variants={stagger(0.07)} initial="hidden" animate="show"
-              className="grid grid-cols-2 gap-4 mb-8 text-left"
-            >
-              {['Keyword alignment', 'Section-by-section rewrites', 'JD match score', 'Download tailored resume'].map(f => (
-                <motion.div key={f} variants={fadeUp} className="flex items-center gap-2 text-sm text-slate-700">
-                  <div className="w-5 h-5 rounded-full bg-[#FFF3EE] flex items-center justify-center flex-shrink-0">
-                    <Check className="w-3 h-3 text-[#FF6B47]" strokeWidth={3} />
+      {/* What You Get */}
+      <section className="py-16 bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, ease }}>
+              <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 mb-4 leading-tight">Your resume, perfectly matched to the job</h2>
+              <p className="text-slate-500 mb-8 leading-relaxed">We don't just swap keywords. We rewrite your resume so it reads like it was built for that specific role — because it was.</p>
+              <div className="space-y-3">
+                {deliverables.map(d => (
+                  <div key={d} className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-[#4F8EF7] flex-shrink-0 mt-0.5" strokeWidth={2.5} />
+                    <span className="text-slate-700 text-sm font-medium">{d}</span>
                   </div>
-                  {f}
-                </motion.div>
+                ))}
+              </div>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, ease }}
+              className="bg-gradient-to-br from-[#1e3a6e] to-[#2d5aad] rounded-3xl p-8 text-white">
+              <div className="flex items-center gap-3 mb-8">
+                <FileText className="w-8 h-8 text-[#FF6B47]" />
+                <div>
+                  <div className="font-extrabold text-lg">What makes us different</div>
+                  <div className="text-white/60 text-sm">Expert eyes on every word</div>
+                </div>
+              </div>
+              {[
+                ['Real human rewrite, not a template swap', 'We don\'t just paste keywords in. We restructure your experience to tell the story the JD is looking for.'],
+                ['Tone and culture alignment', 'Startup JD vs enterprise JD sound completely different. We match the company\'s language style.'],
+                ['Hidden requirements uncovered', 'We read between the lines and surface skills the hiring manager wants but didn\'t explicitly write.'],
+                ['Before + after match score', 'You see exactly how much your match score improved — so you know the work was done.'],
+              ].map(([title, desc]) => (
+                <div key={title} className="mb-6 last:mb-0 pl-4 border-l-2 border-[#FF6B47]/50">
+                  <div className="font-bold text-sm mb-1">{title}</div>
+                  <div className="text-white/65 text-xs leading-relaxed">{desc}</div>
+                </div>
               ))}
             </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-              <Link to="/pricing" className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#FF6B47] hover:bg-[#ff5630] text-white rounded-full font-bold shadow-lg shadow-[#FF6B47]/25 transition-colors">
-                Upgrade to Pro <ArrowRight className="w-4 h-4" />
-              </Link>
-            </motion.div>
-            <div className="mt-4">
-              <Link to="/dashboard" className="text-sm text-slate-500 hover:text-slate-700 font-medium">← Back to Dashboard</Link>
-            </div>
-          </motion.div>
+          </div>
         </div>
-      </div>
-    );
-  }
+      </section>
 
-  return (
-    <div className="min-h-screen bg-slate-50 overflow-hidden">
-      <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid lg:grid-cols-[480px_1fr] gap-6">
-
-          {/* LEFT PANEL */}
-          <motion.div variants={stagger(0.08)} initial="hidden" animate="show">
-            <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFF3EE] text-[#FF6B47] text-xs font-bold uppercase tracking-wider mb-4">
-              <Target className="w-3.5 h-3.5" /> JD Tailoring
-            </motion.div>
-            <motion.h1 variants={fadeUp} className="text-4xl font-extrabold text-slate-900 leading-tight tracking-tight mb-3">
-              Tailor resume to <span className="text-[#FF6B47]">job description</span>
-            </motion.h1>
-            <motion.p variants={fadeUp} className="text-slate-600 mb-6">
-              AI aligns your ATS resume to the exact JD — keywords, skills, tone, and priorities matched automatically.
-            </motion.p>
-
-            {/* Resume Upload */}
-            <motion.div variants={fadeUp}>
-              <input id="resumeFileInput" type="file" accept=".docx" hidden onChange={(e) => {
-                const f = e.target.files[0];
-                if (!f) return;
-                if (f.size > 5 * 1024 * 1024) { setError('File too large. Maximum size is 5MB.'); return; }
-                if (!f.name.match(/\.docx$/i)) { setError('Only .docx files are supported. Please upload a Word document.'); return; }
-                setResumeFile(f);
-                setResumeFileName(f.name);
-                setError('');
-              }} />
-              <motion.div
-                onClick={() => !tailored && document.getElementById('resumeFileInput').click()}
-                whileHover={{ borderColor: resumeFileName ? '#0D6B4F' : '#FF6B47' }}
-                transition={{ duration: 0.2 }}
-                className={`bg-white rounded-2xl border-2 ${resumeFileName ? 'border-[#0D6B4F]' : 'border-dashed border-slate-200'} p-4 mb-4 flex items-center gap-3 cursor-pointer`}
-              >
-                <motion.div
-                  className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-extrabold ${resumeFileName ? 'bg-[#0D6B4F]' : 'bg-slate-300'}`}
-                  animate={resumeFileName ? { scale: [1, 1.2, 1] } : {}}
-                  transition={{ duration: 0.4 }}
-                >
-                  {resumeFileName ? <Check className="w-5 h-5" strokeWidth={3} /> : <Upload className="w-5 h-5" />}
-                </motion.div>
-                <div className="flex-1 min-w-0">
-                  {resumeFileName ? (
-                    <>
-                      <div className="font-bold text-slate-900 text-sm truncate">{resumeFileName}</div>
-                      <div className="text-xs text-slate-500">{resumeFile ? 'Ready to tailor' : 'Saved — re-upload to re-analyze'}</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="font-bold text-slate-700 text-sm">Upload Your Resume</div>
-                      <div className="text-xs text-slate-500">Word document (.docx)</div>
-                    </>
-                  )}
-                </div>
-              </motion.div>
-            </motion.div>
-
-            <motion.div variants={fadeUp} className="bg-white rounded-2xl border border-slate-100 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                  <Briefcase className="w-4 h-4" /> Paste Job Description
-                </label>
-                {!jd && (
-                  <button onClick={loadSample} className="text-xs text-[#FF6B47] font-semibold hover:underline">Load sample JD</button>
-                )}
-              </div>
-              <textarea
-                value={jd}
-                onChange={(e) => setJd(e.target.value)}
-                placeholder={"Paste the full job description here...\n\nInclude requirements, responsibilities, and qualifications for best results."}
-                rows={12}
-                className="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#FF6B47] focus:ring-2 focus:ring-[#FF6B47]/10 resize-none transition"
-              />
-              <div className="flex items-center justify-between mt-3 text-xs text-slate-500">
-                <span>{jd.length} characters</span>
-                <span className={jd.length >= 50 ? 'text-[#0D6B4F] font-bold' : ''}>
-                  {jd.length >= 50 ? '✓ Ready to tailor' : `Need ${50 - jd.length} more chars`}
-                </span>
-              </div>
-            </motion.div>
-
-            <motion.div variants={fadeUp} className="mt-4">
-              {!tailored ? (
-                <motion.button
-                  disabled={jd.length < 50 || !resumeFile || tailoring}
-                  onClick={handleTailor}
-                  whileHover={jd.length >= 50 && resumeFile && !tailoring ? { scale: 1.02, boxShadow: '0 12px 28px rgba(255,107,71,0.28)' } : {}}
-                  whileTap={jd.length >= 50 && resumeFile && !tailoring ? { scale: 0.97 } : {}}
-                  className="w-full py-3 rounded-xl bg-[#FF6B47] hover:bg-[#ff5630] disabled:bg-slate-200 disabled:text-slate-500 text-white font-bold transition-colors flex items-center justify-center gap-2"
-                >
-                  {tailoring ? 'Tailoring your resume...' : (<><Sparkles className="w-4 h-4" /> Tailor Resume Now</>)}
-                </motion.button>
-              ) : (
-                <motion.button
-                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                  onClick={reset}
-                  className="w-full py-3 rounded-xl bg-white border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 flex items-center justify-center gap-2"
-                >
-                  <RotateCw className="w-4 h-4" /> Try Different JD
-                </motion.button>
-              )}
-              <AnimatePresence>
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
-                    className="mt-2 p-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-xs"
-                  >
-                    {error}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <AnimatePresence>
-                {tailoring && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                    className="mt-2 p-3 bg-white rounded-xl border border-slate-100 text-xs text-slate-500 flex items-center gap-2"
-                  >
-                    <div className="w-4 h-4 border-2 border-slate-200 border-t-[#FF6B47] rounded-full animate-spin"></div>
-                    AI is tailoring your resume to this JD...
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
+      {/* Pricing */}
+      <section className="py-16 bg-slate-50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div className="text-center mb-10" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, ease }}>
+            <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 mb-3">Included in every plan</h2>
+            <p className="text-slate-500 text-lg">JD Tailoring comes with both Pro and Premium — one-time payment</p>
           </motion.div>
-
-          {/* RIGHT PANEL */}
-          <AnimatePresence mode="wait">
-            {tailored && data ? (
-              <motion.div
-                key="results"
-                initial={{ opacity: 0, x: 40, scale: 0.97 }}
-                animate={{ opacity: 1, x: 0,  scale: 1    }}
-                exit={{    opacity: 0, x: 40, scale: 0.97 }}
-                transition={{ duration: 0.45, ease }}
-                className="bg-white rounded-2xl border border-slate-100 p-6"
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between pb-5 border-b border-slate-100 mb-5">
-                  <div>
-                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tailored For</div>
-                    <div className="font-bold text-slate-900 mt-0.5">{data.jobTitle}</div>
-                    <div className="text-xs text-slate-500">{data.company || 'Matched to your job description'}</div>
+          <motion.div className="grid md:grid-cols-2 gap-6" variants={stagger(0.1)} initial="hidden" whileInView="show" viewport={{ once: true }}>
+            {plans.map(plan => (
+              <motion.div key={plan.id} variants={fadeUp}
+                whileHover={{ y: -6, boxShadow: plan.highlighted ? '0 24px 60px rgba(15,61,46,0.25)' : '0 20px 48px rgba(0,0,0,0.09)' }}
+                transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+                className={`relative rounded-3xl p-8 border-2 ${plan.highlighted ? 'bg-[#0F3D2E] border-[#0F3D2E] text-white shadow-xl' : 'bg-white border-slate-100'}`}>
+                {plan.badge && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#FF6B47] text-white text-xs font-bold uppercase tracking-wider shadow">{plan.badge}</div>
+                )}
+                <div className="mb-6">
+                  <div className="text-sm font-bold uppercase tracking-wider mb-2 text-[#FF6B47]">{plan.name}</div>
+                  <div className="flex items-baseline gap-2 mb-0.5">
+                    <span className="text-4xl font-extrabold">{plan.price}</span>
+                    <span className={`text-base font-semibold line-through ${plan.highlighted ? 'text-white/35' : 'text-slate-300'}`}>{plan.originalPrice}</span>
                   </div>
-                  <MatchRing score={data.matchScore} />
+                  <div className={`text-[11px] font-bold uppercase tracking-wider mb-3 ${plan.highlighted ? 'text-white/50' : 'text-slate-400'}`}>One-Time Payment · No Subscription</div>
+                  <p className={`text-sm leading-relaxed ${plan.highlighted ? 'text-white/75' : 'text-slate-500'}`}>{plan.desc}</p>
                 </div>
-
-                {/* Tab bar */}
-                <div className="flex bg-slate-100 rounded-xl p-1 mb-6 relative">
-                  {tabs.map((t, i) => (
-                    <button
-                      key={t}
-                      onClick={() => setActiveTab(i)}
-                      className={`relative flex-1 py-2 rounded-lg text-xs font-bold transition-colors z-10 ${activeTab === i ? 'text-[#FF6B47]' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                      {activeTab === i && (
-                        <motion.div
-                          layoutId="jd-tab-bg"
-                          className="absolute inset-0 bg-white rounded-lg shadow"
-                          transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                        />
-                      )}
-                      <span className="relative z-10">{t}</span>
-                    </button>
+                <Link to="/pricing"
+                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-full font-bold mb-6 transition-colors ${plan.highlighted ? 'bg-[#FF6B47] hover:bg-[#ff5630] text-white' : 'bg-[#0F3D2E] hover:bg-[#1a5c45] text-white'}`}>
+                  {plan.cta} <ArrowRight className="w-4 h-4" />
+                </Link>
+                <ul className="space-y-2.5">
+                  {plan.features.map(f => (
+                    <li key={f} className="flex items-start gap-2 text-sm">
+                      <CheckCircle2 className={`w-4 h-4 flex-shrink-0 mt-0.5 ${plan.highlighted ? 'text-[#FF6B47]' : 'text-[#0D6B4F]'}`} strokeWidth={2.5} />
+                      <span className={plan.highlighted ? 'text-white/88' : 'text-slate-700'}>{f}</span>
+                    </li>
                   ))}
-                </div>
-
-                {/* Tab content */}
-                <AnimatePresence mode="wait">
-                  {activeTab === 0 && (
-                    <motion.div key="t0" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25, ease }}>
-                      <div className={`p-4 rounded-xl border mb-5 ${data.matchScore >= 85 ? 'bg-[#E8F5F0] border-[#BBE8D8]' : 'bg-blue-50 border-blue-100'}`}>
-                        <div className="flex items-start gap-2">
-                          <Check className={`w-5 h-5 flex-shrink-0 mt-0.5 ${data.matchScore >= 85 ? 'text-[#0D6B4F]' : 'text-blue-600'}`} strokeWidth={3} />
-                          <div>
-                            <div className={`font-bold text-sm mb-1 ${data.matchScore >= 85 ? 'text-[#0D6B4F]' : 'text-blue-900'}`}>
-                              {data.matchScore >= 85 ? 'Excellent Match' : data.matchScore >= 65 ? 'Good Match' : 'Partial Match'} — {data.matchScore}% alignment
-                            </div>
-                            <div className="text-xs text-slate-700">
-                              Your resume has been aligned with this JD. {data.keywordsAdded.length} new keywords added, {data.sectionsUpdated.length} sections updated.
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="grid gap-3">
-                        <div className="p-4 rounded-xl bg-[#FFF3EE] border border-[#FF6B47]/20">
-                          <div className="text-xs font-bold text-[#FF6B47] mb-2">➕ KEYWORDS ADDED ({data.keywordsAdded.length})</div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {data.keywordsAdded.map((k, i) => (
-                              <motion.span key={k} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.04, type: 'spring', stiffness: 400 }}
-                                className="px-2 py-1 rounded-md bg-white text-[#FF6B47] text-xs font-semibold border border-[#FF6B47]/30">{k}
-                              </motion.span>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="p-4 rounded-xl bg-[#E8F5F0] border border-[#BBE8D8]">
-                          <div className="text-xs font-bold text-[#0D6B4F] mb-2">✓ ALREADY PRESENT ({data.keywordsPresent.length})</div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {data.keywordsPresent.map((k, i) => (
-                              <motion.span key={k} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.04, type: 'spring', stiffness: 400 }}
-                                className="px-2 py-1 rounded-md bg-white text-[#0D6B4F] text-xs font-semibold border border-[#BBE8D8]">{k}
-                              </motion.span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveTab(1)}
-                        className="w-full mt-5 py-3 rounded-xl bg-gradient-to-r from-[#FF6B47] to-[#ff8366] text-white font-bold flex items-center justify-center gap-2 hover:shadow-lg transition-shadow">
-                        View Changes Made <ArrowRight className="w-4 h-4" />
-                      </motion.button>
-                    </motion.div>
-                  )}
-
-                  {activeTab === 1 && (
-                    <motion.div key="t1" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25, ease }}
-                      className="space-y-3">
-                      <div className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">✏️ Sections Updated ({data.sectionsUpdated.length})</div>
-                      <motion.div variants={stagger(0.07)} initial="hidden" animate="show">
-                        {data.sectionsUpdated.map((s, i) => (
-                          <motion.div key={i}
-                            variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3, ease } } }}
-                            whileHover={{ borderColor: '#FF6B47', borderOpacity: 0.4 }}
-                            className="p-4 rounded-xl bg-white border border-slate-100 transition-colors mb-3">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Edit3 className="w-4 h-4 text-[#FF6B47]" />
-                              <span className="font-bold text-slate-900 text-sm">{s.section}</span>
-                            </div>
-                            <div className="text-sm text-slate-700">{s.change}</div>
-                          </motion.div>
-                        ))}
-                      </motion.div>
-                      <div className="text-xs font-bold text-slate-600 uppercase tracking-wider mt-6 mb-2">✓ Preserved ({data.unchangedSections.length})</div>
-                      <div className="flex flex-wrap gap-2">
-                        {data.unchangedSections.map((s, i) => (
-                          <motion.div key={s} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05, type: 'spring', stiffness: 400 }}
-                            className="px-3 py-1.5 rounded-lg bg-slate-50 text-xs font-semibold text-slate-600 border border-slate-100">{s}
-                          </motion.div>
-                        ))}
-                      </div>
-                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveTab(2)}
-                        className="w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-[#FF6B47] to-[#ff8366] text-white font-bold flex items-center justify-center gap-2 hover:shadow-lg transition-shadow">
-                        Preview Resume <ArrowRight className="w-4 h-4" />
-                      </motion.button>
-                    </motion.div>
-                  )}
-
-                  {activeTab === 2 && (
-                    <motion.div key="t2" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25, ease }}>
-                      <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Tailored Resume Preview</div>
-                      <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6 text-sm leading-relaxed max-h-[520px] overflow-y-auto">
-                        {/* Name + title */}
-                        <div className="border-b-2 border-[#0F3D2E] pb-3 mb-4">
-                          <div className="text-xl font-extrabold text-slate-900">{data.candidateName}</div>
-                          {data.jobTitle && (
-                            <div className="text-sm font-bold text-[#0F3D2E] mt-0.5">
-                              {data.jobTitle}{data.company ? ` · ${data.company}` : ''}
-                            </div>
-                          )}
-                        </div>
-                        {/* Tailored summary */}
-                        <div className="mb-4">
-                          <div className="text-xs font-extrabold text-[#0F3D2E] uppercase tracking-wider mb-1.5">Professional Summary</div>
-                          <p className="text-slate-700 leading-relaxed">{data.tailoredSummary}</p>
-                        </div>
-                        {/* Tailored skills */}
-                        <div className="mb-4">
-                          <div className="text-xs font-extrabold text-[#0F3D2E] uppercase tracking-wider mb-1.5">Key Skills</div>
-                          <p className="text-slate-700">{(data.tailoredSkills || []).join(' · ')}</p>
-                        </div>
-                        {/* All other original sections */}
-                        {parseOriginalSections(data.originalResumeText)
-                          .filter(s => !SKIP_SECTIONS.has(s.title))
-                          .map((s, i) => (
-                            <div key={i} className="mb-4">
-                              <div className="text-xs font-extrabold text-[#0F3D2E] uppercase tracking-wider mb-1.5">{s.title}</div>
-                              <div className="text-slate-700 whitespace-pre-line">{s.content}</div>
-                            </div>
-                          ))
-                        }
-                      </div>
-                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveTab(3)}
-                        className="w-full mt-4 py-3 rounded-xl bg-[#FF6B47] hover:bg-[#ff5630] text-white font-bold flex items-center justify-center gap-2 transition-colors">
-                        <Download className="w-4 h-4" /> Go to Download
-                      </motion.button>
-                    </motion.div>
-                  )}
-
-                  {activeTab === 3 && (
-                    <motion.div key="t3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25, ease }}
-                      className="text-center">
-                      <motion.div
-                        initial={{ scale: 0 }} animate={{ scale: 1 }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 18, delay: 0.1 }}
-                        className="w-16 h-16 rounded-full bg-[#E8F5F0] mx-auto mb-4 flex items-center justify-center"
-                      >
-                        <Check className="w-9 h-9 text-[#0D6B4F]" strokeWidth={3} />
-                      </motion.div>
-                      <h3 className="text-xl font-extrabold text-slate-900 mb-2">Tailored Resume Ready!</h3>
-                      <p className="text-sm text-slate-600 mb-1">Tailored for <span className="font-bold text-slate-800">{data.jobTitle}</span>{data.company ? ` at ${data.company}` : ''}</p>
-                      <p className="text-sm text-slate-500 mb-6">Match score: <span className="font-bold text-[#0D6B4F]">{data.matchScore}%</span></p>
-                      <div className="bg-slate-50 rounded-xl p-4 mb-5 text-left text-xs text-slate-600 space-y-1.5">
-                        <div className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#0D6B4F]" strokeWidth={3} /> Professional Summary tailored to JD</div>
-                        <div className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#0D6B4F]" strokeWidth={3} /> Key Skills reordered & updated</div>
-                        <div className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#0D6B4F]" strokeWidth={3} /> {data.keywordsAdded.length} new keywords added</div>
-                        <div className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#0D6B4F]" strokeWidth={3} /> All other sections preserved as-is</div>
-                      </div>
-                      <motion.button
-                        whileHover={!downloading ? { scale: 1.02, boxShadow: '0 12px 28px rgba(255,107,71,0.28)' } : {}}
-                        whileTap={!downloading ? { scale: 0.97 } : {}}
-                        onClick={downloadDocx}
-                        disabled={downloading}
-                        className="w-full py-3.5 rounded-xl bg-[#FF6B47] hover:bg-[#ff5630] disabled:bg-slate-300 text-white font-bold flex items-center justify-center gap-2 transition-colors mb-4"
-                      >
-                        <Download className="w-4 h-4" />
-                        {downloading ? 'Generating .docx...' : 'Download Tailored Resume (.docx)'}
-                      </motion.button>
-                      <a href="/jobs" className="text-sm text-[#0F3D2E] font-semibold hover:underline">Next → Find matching jobs</a>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                </ul>
               </motion.div>
-            ) : (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="bg-white rounded-2xl border border-dashed border-slate-200 p-12 flex flex-col items-center justify-center text-center min-h-[500px]"
-              >
-                <motion.div
-                  animate={{ y: [0, -8, 0] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                  className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center mb-5"
-                >
-                  <Briefcase className="w-9 h-9 text-slate-400" />
-                </motion.div>
-                <h3 className="text-xl font-bold text-slate-700 mb-2">Your tailored resume will appear here</h3>
-                <p className="text-sm text-slate-500 max-w-sm">Paste a job description on the left and click "Tailor Resume" to see AI-powered alignment with keywords, skills, and priorities.</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+            ))}
+          </motion.div>
+          <motion.div className="text-center mt-8 flex flex-wrap items-center justify-center gap-6 text-sm text-slate-500" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
+            <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-[#0D6B4F]" /> Secure payment</div>
+            <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-[#FF6B47]" /> 24–48 hr delivery</div>
+            <div className="flex items-center gap-2"><Zap className="w-4 h-4 text-[#7C3AED]" /> Book your call instantly</div>
+          </motion.div>
         </div>
-      </div>
+      </section>
     </div>
   );
 };

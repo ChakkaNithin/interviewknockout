@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import Navbar from '../components/Navbar';
@@ -421,12 +421,13 @@ const COMPANY_NAMES = ['Google', 'Microsoft', 'Amazon', 'TCS', 'Adobe', 'Infosys
 const Landing = () => {
   const [openFaq, setOpenFaq] = useState(0);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const roadmapSteps = [
-    { step: '01', icon: Target,   color: '#0D6B4F', bg: '#E8F5F0', border: '#BBE8D8', title: 'ATS Score',  sub: 'Free',    desc: 'Upload your resume and instantly see your ATS compatibility score, strengths, and gaps.',                        cta: 'Get Score',   href: '/ats-checker' },
-    { step: '02', icon: FileText, color: '#FF6B47', bg: '#FFF3EE', border: '#FECACA', title: 'Tailor to JD', sub: 'Pro',   desc: 'Paste any job description. AI rewrites your summary, skills, and bullets to match perfectly.',                  cta: 'Tailor Now',  href: '/jd-tailor' },
-    { step: '03', icon: Search,   color: '#4F8EF7', bg: '#EFF6FF', border: '#BFDBFE', title: 'Find Jobs',  sub: 'Premium', desc: 'Search thousands of live roles matched to your skills, salary, and location preferences.',                        cta: 'Search Jobs', href: '/jobs' },
-    { step: '04', icon: Award,    color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A', title: 'Get Interview Calls', sub: 'Goal',    desc: 'Your optimized resume gets noticed by recruiters. More callbacks, more interviews, more offers.',                cta: 'Get Started', href: user ? '/builder' : '/signup' },
+    { step: '01', icon: Target,   color: '#0D6B4F', bg: '#E8F5F0', border: '#BBE8D8', title: 'ATS Score',          sub: 'Expert Review',     desc: 'Our experts analyse your resume against top ATS systems and give you a detailed compatibility report with actionable fixes.',  cta: 'See How It Works', href: '/ats-checker' },
+    { step: '02', icon: FileText, color: '#FF6B47', bg: '#FFF3EE', border: '#FECACA', title: 'Tailor to JD',       sub: 'Expert Tailoring',  desc: 'We rewrite your summary, skills, and bullets to perfectly match any job description — increasing your callback rate.',          cta: 'See How It Works', href: '/jd-tailor' },
+    { step: '03', icon: Search,   color: '#4F8EF7', bg: '#EFF6FF', border: '#BFDBFE', title: 'Find Jobs',          sub: 'Curated Job List',  desc: 'We hand-pick live roles matched to your skills, salary, and location — so you apply to the right jobs, not all of them.',     cta: 'See How It Works', href: '/jobs' },
+    { step: '04', icon: Award,    color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A', title: 'Get Interview Calls', sub: 'Your Goal',         desc: 'Your optimised, recruiter-ready resume gets noticed. More callbacks, more interviews, more offers.',                           cta: 'Get Started',      href: user ? '/builder' : '/signup' },
   ];
 
   // Hero visual card configs
@@ -485,13 +486,8 @@ const Landing = () => {
 
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-3 mb-6">
               <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                <Link to="/ats-checker" className="inline-flex items-center justify-center gap-2 px-7 py-4 bg-[#FF6B47] hover:bg-[#ff5630] text-white rounded-full font-bold shadow-lg shadow-[#FF6B47]/20 hover:shadow-xl hover:shadow-[#FF6B47]/30 transition-shadow">
-                  Get My Resume Score — Free <ArrowRight className="w-4 h-4" />
-                </Link>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                <Link to={user ? '/builder' : '/signup'} className="inline-flex items-center justify-center gap-2 px-7 py-4 bg-white hover:bg-slate-50 text-slate-900 rounded-full font-bold border-2 border-slate-200 hover:border-slate-300 transition-all">
-                  <FileText className="w-4 h-4" /> Build My Resume
+                <Link to={user ? '/builder' : '/signup'} className="inline-flex items-center justify-center gap-2 px-7 py-4 bg-[#FF6B47] hover:bg-[#ff5630] text-white rounded-full font-bold shadow-lg shadow-[#FF6B47]/20 hover:shadow-xl hover:shadow-[#FF6B47]/30 transition-shadow">
+                  <FileText className="w-4 h-4" /> Build Your Resume
                 </Link>
               </motion.div>
             </motion.div>
@@ -718,7 +714,7 @@ const Landing = () => {
               90% of resumes are rejected before a human reads them. InterviewKnockout ensures yours gets through — optimized for every major ATS system used by top companies.
             </motion.p>
             <motion.ul variants={stagger(0.07)} className="space-y-3 mb-8">
-              {['Instant ATS compatibility score with actionable fixes', 'AI rewrites your resume with the right keywords', 'Tested with Workday, Taleo, Greenhouse, and Lever', 'One-click apply all fixes and download your upgraded resume'].map(item => (
+              {['Detailed ATS compatibility report with expert recommendations', 'Our experts rewrite your resume with the right keywords for your target role', 'Tested against Workday, Taleo, Greenhouse, and Lever', 'Receive your ATS-optimised resume within 24–48 hours'].map(item => (
                 <motion.li key={item} variants={fadeUp} className="flex items-start gap-2.5">
                   <div className="w-5 h-5 rounded-full bg-[#0D6B4F] flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="w-3 h-3 text-white" strokeWidth={3} />
@@ -729,8 +725,8 @@ const Landing = () => {
             </motion.ul>
             <motion.div variants={fadeUp}>
               <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="inline-block">
-                <Link to="/ats-checker" className="inline-flex items-center gap-2 px-6 py-3 bg-[#0F3D2E] hover:bg-[#0b2e23] text-white rounded-full font-bold transition-colors">
-                  Check My ATS Score <ArrowRight className="w-4 h-4" />
+                <Link to="/pricing" className="inline-flex items-center gap-2 px-6 py-3 bg-[#0F3D2E] hover:bg-[#0b2e23] text-white rounded-full font-bold transition-colors">
+                  See Plans &amp; Pricing <ArrowRight className="w-4 h-4" />
                 </Link>
               </motion.div>
             </motion.div>
@@ -825,13 +821,13 @@ const Landing = () => {
           >
             {mockTemplates.slice(0, 8).map((t, i) => (
               <motion.div key={t.id} variants={fadeUp}>
-                <Link to={user ? '/builder' : '/signup'} className="group cursor-pointer block">
+                <div onClick={() => navigate(user ? '/builder' : '/signup')} className="group cursor-pointer block">
                   <ResumeThumbnail template={t} index={i} />
                   <div className="mt-3 flex items-center justify-between">
                     <div className="font-bold text-slate-900">{t.name}</div>
                     <div className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{t.tag}</div>
                   </div>
-                </Link>
+                </div>
               </motion.div>
             ))}
           </motion.div>
@@ -994,10 +990,15 @@ const Landing = () => {
                 <div className="mb-5">
                   <div className="text-sm font-bold uppercase tracking-wider mb-2 text-[#FF6B47]">{p.name}</div>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-5xl font-extrabold">${p.price}</span>
-                    <span className={`text-sm ${p.highlighted ? 'text-white/70' : 'text-slate-500'}`}>/{p.period}</span>
+                    <span className="text-5xl font-extrabold">{p.price === 0 ? 'Free' : `₹${p.price}`}</span>
+                    {p.originalPrice && (
+                      <span className={`text-base font-semibold line-through ${p.highlighted ? 'text-white/35' : 'text-slate-300'}`}>₹{p.originalPrice}</span>
+                    )}
                   </div>
-                  <p className={`text-sm mt-2 ${p.highlighted ? 'text-white/80' : 'text-slate-600'}`}>{p.description}</p>
+                  <div className={`text-[11px] font-bold uppercase tracking-wider mt-1 mb-2 ${p.highlighted ? 'text-white/50' : 'text-slate-400'}`}>
+                    {p.price === 0 ? 'No credit card required' : 'One-Time Payment · No Subscription'}
+                  </div>
+                  <p className={`text-sm ${p.highlighted ? 'text-white/80' : 'text-slate-600'}`}>{p.description}</p>
                 </div>
                 <ul className="space-y-2.5 mb-7">
                   {p.features.slice(0, 5).map(f => (
@@ -1096,11 +1097,11 @@ const Landing = () => {
             Stop applying blindly — start getting interview calls
           </h2>
           <p className="text-lg text-white/80 mb-8 max-w-2xl mx-auto">
-            Join 1,000+ candidates who landed interviews with InterviewKnockout's AI-powered resume optimization.
+            Join 1,000+ candidates who landed interviews with InterviewKnockout's expert resume service.
           </p>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }} className="inline-block">
             <Link to="/ats-checker" className="inline-flex items-center gap-2 px-8 py-4 bg-[#FF6B47] hover:bg-[#ff5630] text-white rounded-full font-bold text-lg shadow-2xl shadow-[#FF6B47]/30 transition-colors">
-              Get My Resume Score — Free <ArrowRight className="w-5 h-5" />
+              Get My Resume Score <ArrowRight className="w-5 h-5" />
             </Link>
           </motion.div>
           <div className="flex items-center justify-center gap-2 mt-6 text-sm text-white/70">

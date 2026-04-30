@@ -1,4 +1,5 @@
 import axios from 'axios';
+import supabase from './supabase';
 
 const getBackendUrl = () => {
   const hostname = window.location.hostname;
@@ -19,41 +20,28 @@ const API_BASE = `${BACKEND_URL}/api`;
 
 const api = axios.create({ baseURL: API_BASE, timeout: 180000 });
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('ik_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+api.interceptors.request.use(async (config) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.access_token) config.headers.Authorization = `Bearer ${session.access_token}`;
   return config;
 });
 
 api.interceptors.response.use(
   (r) => r,
   (err) => {
-    // Only force logout on explicit 401 — not on network errors or 5xx
     if (err.response?.status === 401) {
-      localStorage.removeItem('ik_token');
-      localStorage.removeItem('ik_user');
-      if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
-      }
+      err.message = err.response?.data?.detail || 'Your session could not access this feature. Please try again.';
     }
     return Promise.reject(err);
   }
 );
 
-export const authApi = {
-  signup: (name, email, password) => api.post('/auth/signup', { name, email, password }).then(r => r.data),
-  login: (email, password) => api.post('/auth/login', { email, password }).then(r => r.data),
-  google: (profile) => api.post('/auth/google', profile).then(r => r.data),
-  me: () => api.get('/auth/me').then(r => r.data),
-  updatePlan: (plan) => api.patch(`/auth/me/plan?plan=${plan}`).then(r => r.data),
-};
-
 export const resumeApi = {
-  list: () => api.get('/resumes').then(r => r.data),
-  create: (payload) => api.post('/resumes', payload).then(r => r.data),
-  get: (id) => api.get(`/resumes/${id}`).then(r => r.data),
-  update: (id, payload) => api.put(`/resumes/${id}`, payload).then(r => r.data),
-  delete: (id) => api.delete(`/resumes/${id}`).then(r => r.data),
+  list: () => Promise.resolve([]),
+  create: () => Promise.resolve(null),
+  get: () => Promise.resolve(null),
+  update: () => Promise.resolve(null),
+  delete: () => Promise.resolve(null),
 };
 
 export const atsApi = {
@@ -66,6 +54,8 @@ export const atsApi = {
   },
   applyFixes: (resume_text, fixes, target_role) =>
     api.post('/ats/apply-fixes', { resume_text, fixes, target_role }).then(r => r.data),
+  downloadFixedDocx: (originalFileBase64, resumeData) =>
+    api.post('/ats/download-fixed-docx', { original_file_base64: originalFileBase64, resume_data: resumeData }, { responseType: 'blob' }).then(r => r.data),
 };
 
 export const jdApi = {
@@ -84,14 +74,6 @@ export const aiApi = {
 
 export const jobsApi = {
   search: (payload) => api.post('/jobs/search', payload).then(r => r.data),
-  save: (job) => api.post('/jobs/save', job).then(r => r.data),
-  saved: () => api.get('/jobs/saved').then(r => r.data),
-  unsave: (id) => api.delete(`/jobs/saved/${id}`).then(r => r.data),
-};
-
-export const paymentsApi = {
-  createOrder: (plan, billing) => api.post('/payments/create-order', { plan, billing }).then(r => r.data),
-  verify: (payload) => api.post('/payments/verify', payload).then(r => r.data),
 };
 
 export default api;

@@ -1,16 +1,16 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Landing from './pages/Landing';
 import Auth from './pages/Auth';
+import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import Pricing from './pages/Pricing';
+import ResumeBuilder from './pages/ResumeBuilder';
 import ATSChecker from './pages/ATSChecker';
 import JDTailor from './pages/JDTailor';
 import JobSearch from './pages/JobSearch';
-import ResumeBuilder from './pages/ResumeBuilder';
 import './App.css';
 
 class ErrorBoundary extends React.Component {
@@ -34,41 +34,31 @@ class ErrorBoundary extends React.Component {
 }
 
 function AppRoutes() {
-  const location = useLocation();
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={location.pathname}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.18, ease: 'easeInOut' }}
-      >
-        <Routes location={location}>
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Auth mode="login" />} />
-          <Route path="/signup" element={<Auth mode="signup" />} />
-          <Route path="/pricing" element={<Pricing />} />
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/builder" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
-          <Route path="/builder/:id" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
-          <Route path="/ats-checker" element={<ProtectedRoute><ATSChecker /></ProtectedRoute>} />
-          <Route path="/jd-tailor" element={<ProtectedRoute><JDTailor /></ProtectedRoute>} />
-          <Route path="/jobs" element={<ProtectedRoute><JobSearch /></ProtectedRoute>} />
-        </Routes>
-      </motion.div>
-    </AnimatePresence>
+    <Routes>
+      <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<Auth key="login" mode="login" />} />
+      <Route path="/signup" element={<Auth key="signup" mode="signup" />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/pricing" element={<Pricing />} />
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/builder" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
+      <Route path="/builder/:id" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
+      <Route path="/ats-checker" element={<ProtectedRoute><ATSChecker /></ProtectedRoute>} />
+      <Route path="/jd-tailor" element={<ProtectedRoute><JDTailor /></ProtectedRoute>} />
+      <Route path="/jobs" element={<ProtectedRoute><JobSearch /></ProtectedRoute>} />
+    </Routes>
   );
 }
 
 function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <BrowserRouter>
+      <BrowserRouter>
+        <AuthProvider>
           <AppRoutes />
-        </BrowserRouter>
-      </AuthProvider>
+        </AuthProvider>
+      </BrowserRouter>
     </ErrorBoundary>
   );
 }

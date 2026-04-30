@@ -5,7 +5,7 @@ import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { resumeApi } from '../lib/api';
 import { mockTemplates } from '../mock';
-import { Plus, FileText, Target, Briefcase, Search, Sparkles, Clock, Download, Copy, Trash2, Zap, Loader2 } from 'lucide-react';
+import { Plus, FileText, Sparkles, Clock, Download, Copy, Trash2, Zap, Loader2 } from 'lucide-react';
 
 const ease = [0.22, 1, 0.36, 1];
 
@@ -48,10 +48,7 @@ const Dashboard = () => {
   }, []);
 
   const tools = [
-    { name: 'ATS Checker', path: '/ats-checker', icon: Target,   color: '#0D6B4F', bg: '#E8F5F0', desc: 'Score your resume against ATS systems' },
-    { name: 'JD Tailor',   path: '/jd-tailor',   icon: Briefcase, color: '#FF6B47', bg: '#FFF3EE', desc: 'Tailor resume to any job description' },
-    { name: 'Job Search',  path: '/jobs',         icon: Search,    color: '#4F8EF7', bg: '#EFF6FF', desc: 'Find jobs matched to your profile' },
-    { name: 'AI Builder',  path: '/builder',      icon: Sparkles,  color: '#7C3AED', bg: '#F3E8FF', desc: 'Build resume with AI assistance' },
+    { name: 'AI Resume Builder', path: '/builder', icon: Sparkles, color: '#7C3AED', bg: '#F3E8FF', desc: 'Build your resume with AI assistance' },
   ];
 
   const deleteResume = async (id) => {
