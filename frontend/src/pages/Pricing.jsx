@@ -111,6 +111,7 @@ const Pricing = () => {
   const [paying, setPaying] = useState(null);
   const [payError, setPayError] = useState('');
   const [paySuccess, setPaySuccess] = useState('');
+  const [bookingUrl, setBookingUrl] = useState('');
 
   const handleUpgrade = async (plan) => {
     if (plan.isFree) return navigate(user ? '/builder' : '/signup');
@@ -132,8 +133,8 @@ const Pricing = () => {
         handler: async (response) => {
           try {
             await updatePlan(plan.id);
-            setPaySuccess('Payment successful! Redirecting you to book your 15-minute consultation call...');
-            setTimeout(() => window.open('https://cal.com/interviewknockout/interviewknockout-consultation', '_blank'), 1800);
+            setPaySuccess('Payment confirmed! Click below to book your 15-minute consultation call.');
+            setBookingUrl('https://cal.com/interviewknockout/interviewknockout-consultation');
           } catch {
             const pid = response?.razorpay_payment_id ? ` (Payment ID: ${response.razorpay_payment_id})` : '';
             setPayError(`Payment received but plan update failed. Please contact support@interviewknockout.in${pid}`);
@@ -203,6 +204,12 @@ const Pricing = () => {
               <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="mb-6 max-w-xl mx-auto px-4 py-4 bg-[#E8F5F0] border border-[#BBE8D8] rounded-xl text-sm text-[#0F3D2E] text-center font-semibold">
                 ✅ {paySuccess}
+                {bookingUrl && (
+                  <a href={bookingUrl} target="_blank" rel="noopener noreferrer"
+                    className="mt-3 flex items-center justify-center gap-2 px-6 py-2.5 bg-[#0F3D2E] hover:bg-[#1a5c45] text-white rounded-full font-bold text-sm transition-colors">
+                    <CalendarDays className="w-4 h-4" /> Book My Consultation Call
+                  </a>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
