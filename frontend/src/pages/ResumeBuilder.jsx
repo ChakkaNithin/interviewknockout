@@ -678,6 +678,11 @@ const ResumeBuilder = () => {
                 <div className="text-[10px] text-slate-500 mt-1">
                   {[data.personal.email, data.personal.phone, data.personal.location].filter(Boolean).join(' · ') || 'contact info'}
                 </div>
+                {(data.personal.linkedin || data.personal.github) && (
+                  <div className="text-[10px] text-slate-500">
+                    {[data.personal.linkedin, data.personal.github].filter(Boolean).join(' · ')}
+                  </div>
+                )}
               </div>
               {data.summary.text && (
                 <div className="mb-3">
