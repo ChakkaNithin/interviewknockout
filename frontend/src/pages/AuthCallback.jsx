@@ -10,32 +10,32 @@ const AuthCallback = () => {
     let done = false;
     const go = (path) => { if (!done) { done = true; navigate(path, { replace: true }); } };
 
-    const finishAuth = async () => {
-      try {
-        const code = new URLSearchParams(window.location.search).get('code');
+    // Supabase auto-exchanges the ?code= via PKCE (detectSessionInUrl: true by default).
+    // onAuthStateChange fires SIGNED_IN once exchange completes.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) go('/dashboard');
+      if (event === 'INITIAL_SESSION' && session) go('/dashboard');
+    });
 
-        if (!code) {
-          // No code in URL — Supabase redirect was rejected or port is private
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) { go('/dashboard'); return; }
-          setError('No sign-in code received. This usually means port 3000 is set to Private in Codespaces, or the redirect URL is not in Supabase allowlist. Set port 3000 to Public and try again.');
-          return;
-        }
-
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-        if (exchangeError) throw exchangeError;
-
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-
-        if (session) { go('/dashboard'); return; }
-        setError('Sign in completed but session could not be established. Please try again.');
-      } catch (err) {
-        setError(err.message || 'Unable to finish sign in. Please try again.');
+    // Timeout: if no auth event in 12s, show specific error
+    const timer = setTimeout(async () => {
+      if (done) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) { go('/dashboard'); return; }
+      done = true;
+      const hasCode = new URLSearchParams(window.location.search).get('code');
+      const hasToken = window.location.hash.includes('access_token');
+      if (!hasCode && !hasToken) {
+        setError('No sign-in code received from Google. Make sure port 3000 is set to Public in Codespaces (Ports tab → right-click 3000 → Port Visibility → Public), then try again.');
+      } else {
+        setError('Sign in timed out. Please try again.');
       }
-    };
+    }, 12000);
 
-    finishAuth();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timer);
+    };
   }, [navigate]);
 
   return (
