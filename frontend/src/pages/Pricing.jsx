@@ -130,13 +130,14 @@ const Pricing = () => {
         description: `${plan.name} Plan — One-Time`,
         prefill: { name: user.name, email: user.email },
         theme: { color: '#0F3D2E' },
-        handler: async () => {
+        handler: async (response) => {
           try {
             await updatePlan(plan.id);
             setPaySuccess('Payment successful! Redirecting you to book your 15-minute consultation call...');
             setTimeout(() => window.open('https://cal.com/interviewknockout/interviewknockout-consultation', '_blank'), 1800);
           } catch {
-            setPayError('Payment received but plan update failed. Please contact support@interviewknockout.in');
+            const pid = response?.razorpay_payment_id ? ` (Payment ID: ${response.razorpay_payment_id})` : '';
+            setPayError(`Payment received but plan update failed. Please contact support@interviewknockout.in${pid}`);
           } finally {
             setPaying(null);
           }

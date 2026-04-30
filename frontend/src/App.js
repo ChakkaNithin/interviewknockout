@@ -13,10 +13,24 @@ import JDTailor from './pages/JDTailor';
 import JobSearch from './pages/JobSearch';
 import './App.css';
 
+const NotFound = () => (
+  <div className="min-h-screen flex flex-col items-center justify-center bg-white text-center p-8">
+    <div className="text-8xl font-extrabold text-slate-100 mb-4">404</div>
+    <h1 className="text-2xl font-bold text-slate-900 mb-2">Page not found</h1>
+    <p className="text-slate-500 mb-6">The page you're looking for doesn't exist or has been moved.</p>
+    <a href="/" className="px-6 py-3 bg-[#FF6B47] text-white rounded-full font-bold hover:bg-[#ff5630] transition-colors">
+      Go Home
+    </a>
+  </div>
+);
+
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false, error: null }; }
   static getDerivedStateFromError(error) { return { hasError: true, error }; }
-  componentDidCatch(error, info) { console.error('App error:', error, info); }
+  componentDidCatch(error, info) {
+    console.error('[ErrorBoundary] Uncaught error:', error);
+    console.error('[ErrorBoundary] Component stack:', info?.componentStack);
+  }
   render() {
     if (this.state.hasError) {
       return (
@@ -47,6 +61,7 @@ function AppRoutes() {
       <Route path="/ats-checker" element={<ProtectedRoute><ATSChecker /></ProtectedRoute>} />
       <Route path="/jd-tailor" element={<ProtectedRoute><JDTailor /></ProtectedRoute>} />
       <Route path="/jobs" element={<ProtectedRoute><JobSearch /></ProtectedRoute>} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

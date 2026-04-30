@@ -16,6 +16,20 @@ const Auth = ({ mode = 'login' }) => {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  const getPwStrength = (pw) => {
+    if (!pw) return null;
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (pw.length >= 12) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    if (score <= 1) return { label: 'Weak', color: '#EF4444', width: '25%' };
+    if (score <= 2) return { label: 'Fair', color: '#F59E0B', width: '50%' };
+    if (score <= 3) return { label: 'Good', color: '#4F8EF7', width: '75%' };
+    return { label: 'Strong', color: '#0D6B4F', width: '100%' };
+  };
+
   useEffect(() => {
     setIsLogin(mode === 'login');
     setError('');
@@ -26,7 +40,7 @@ const Auth = ({ mode = 'login' }) => {
     if (!authLoading && user) {
       navigate(from, { replace: true });
     }
-  }, [authLoading, user]); // eslint-disable-line
+  }, [authLoading, user, navigate, from]);
 
   if (authLoading || user) return null;
 
@@ -274,6 +288,17 @@ const Auth = ({ mode = 'login' }) => {
                   {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              {!isLogin && form.password && (() => {
+                const s = getPwStrength(form.password);
+                return s ? (
+                  <div className="mt-2">
+                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-300" style={{ width: s.width, background: s.color }} />
+                    </div>
+                    <p className="text-xs mt-1 font-semibold" style={{ color: s.color }}>{s.label} password</p>
+                  </div>
+                ) : null;
+              })()}
             </div>
 
             {error && (

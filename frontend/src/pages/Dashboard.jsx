@@ -32,6 +32,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('resumes');
   const [actionError, setActionError] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -52,7 +53,8 @@ const Dashboard = () => {
   ];
 
   const deleteResume = async (id) => {
-    if (!window.confirm('Delete this resume?')) return;
+    if (confirmDeleteId !== id) { setConfirmDeleteId(id); return; }
+    setConfirmDeleteId(null);
     try {
       await resumeApi.delete(id);
       setResumes(resumes.filter(r => r.id !== id));
@@ -288,7 +290,14 @@ const Dashboard = () => {
                               </motion.div>
                               <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => duplicateResume(r.id)} className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600" title="Duplicate"><Copy className="w-4 h-4" /></motion.button>
                               <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => navigate(`/builder/${r.id}`)} className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600" title="Open in Builder to Print/Download"><Download className="w-4 h-4" /></motion.button>
-                              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => deleteResume(r.id)} className="p-2 border border-slate-200 rounded-lg hover:bg-red-50 hover:border-red-200 text-red-500" title="Delete"><Trash2 className="w-4 h-4" /></motion.button>
+                              {confirmDeleteId === r.id ? (
+                                <div className="flex items-center gap-1">
+                                  <button onClick={() => deleteResume(r.id)} className="px-2 py-1 text-xs font-bold bg-red-500 text-white rounded-lg">Yes</button>
+                                  <button onClick={() => setConfirmDeleteId(null)} className="px-2 py-1 text-xs font-bold border border-slate-200 rounded-lg text-slate-600">No</button>
+                                </div>
+                              ) : (
+                                <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => deleteResume(r.id)} className="p-2 border border-slate-200 rounded-lg hover:bg-red-50 hover:border-red-200 text-red-500" title="Delete"><Trash2 className="w-4 h-4" /></motion.button>
+                              )}
                             </div>
                           </div>
                         </motion.div>

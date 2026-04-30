@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Menu, X, ChevronDown, LogOut, User, Target, PenLine, Search } from 'lucide-react';
@@ -11,6 +11,17 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
+  const userMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+    if (userMenuOpen) document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [userMenuOpen]);
 
   const tools = [
     { label: 'ATS Score', desc: 'Check resume compatibility', to: '/ats-checker', icon: Target, color: '#FF6B47' },
@@ -82,7 +93,7 @@ const Navbar = () => {
           {/* Right CTA */}
           <div className="hidden lg:flex items-center gap-3">
             {user ? (
-              <div className="relative">
+              <div className="relative" ref={userMenuRef}>
                 <button onClick={() => setUserMenuOpen(!userMenuOpen)} className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-slate-100 transition-colors">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#0F3D2E] to-[#1F6B4F] text-white flex items-center justify-center text-xs font-bold">
                     {user.name.charAt(0).toUpperCase()}

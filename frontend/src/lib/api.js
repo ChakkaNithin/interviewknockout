@@ -10,8 +10,10 @@ const getBackendUrl = () => {
   if (hostname.includes('.app.github.dev')) {
     return `https://${hostname.replace('-3000.app.github.dev', '-8000.app.github.dev')}`;
   }
-  // Production / deployed domain — use env variable
-  return process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+  // Production / deployed domain — must be set via REACT_APP_BACKEND_URL
+  const url = process.env.REACT_APP_BACKEND_URL;
+  if (!url) console.error('[InterviewKnockout] REACT_APP_BACKEND_URL is not set. API calls will fail.');
+  return url || '';
 };
 
 const BACKEND_URL = getBackendUrl();
