@@ -12,16 +12,16 @@ const Navbar = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const userMenuRef = useRef(null);
+  const toolsRef = useRef(null);
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
-        setUserMenuOpen(false);
-      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setUserMenuOpen(false);
+      if (toolsRef.current && !toolsRef.current.contains(e.target)) setToolsOpen(false);
     };
-    if (userMenuOpen) document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, [userMenuOpen]);
+  }, []);
 
   const tools = [
     { label: 'ATS Score', desc: 'Check resume compatibility', to: '/ats-checker', icon: Target, color: '#FF6B47' },
@@ -52,10 +52,9 @@ const Navbar = () => {
             </Link>
 
             {/* AI Tools dropdown */}
-            <div className="relative">
+            <div className="relative" ref={toolsRef}>
               <button
                 onClick={() => setToolsOpen(!toolsOpen)}
-                onBlur={() => setTimeout(() => setToolsOpen(false), 150)}
                 className={`flex items-center gap-1 px-4 py-2 text-sm font-semibold transition-colors ${isToolsPage ? 'text-[#0F3D2E]' : 'text-slate-700 hover:text-[#0F3D2E]'}`}
               >
                 AI Tools <ChevronDown className={`w-4 h-4 transition-transform ${toolsOpen ? 'rotate-180' : ''}`} />
