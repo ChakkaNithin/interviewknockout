@@ -5,8 +5,9 @@ import { Document, Packer, Paragraph, TextRun, AlignmentType, BorderStyle } from
 import { saveAs } from 'file-saver';
 import Navbar from '../components/Navbar';
 import { mockTemplates } from '../mock';
-import { resumeApi, aiApi, atsApi } from '../lib/api';
+import { resumeApi, atsApi } from '../lib/api';
 import { Plus, Trash2, Save, Eye, Sparkles, User, Briefcase, GraduationCap, Award, Languages, Wrench, ArrowLeft, Loader2, Check, PenLine, X, Download, ChevronDown, ArrowRight, CheckCircle2, Wand2, Search } from 'lucide-react';
+
 
 const STATIC_SECTIONS = [
   { id: 'personal', name: 'Personal Info', icon: User },
@@ -44,8 +45,6 @@ const ResumeBuilder = () => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
-  const [aiGenerating, setAiGenerating] = useState(false);
-  const [aiError, setAiError] = useState('');
   const [loadError, setLoadError] = useState('');
   const [loadingResume, setLoadingResume] = useState(!!id);
   const [atsBanner, setAtsBanner] = useState(null);
@@ -144,19 +143,6 @@ const ResumeBuilder = () => {
     }
   };
 
-  const handleAiSummary = async () => {
-    const prompt = `Name: ${data.personal.name}, Title: ${data.personal.title}, Skills: ${data.skills.filter(Boolean).join(', ')}`;
-    setAiGenerating(true);
-    try {
-      const result = await aiApi.generate(prompt, '', 'summary');
-      if (result.text) setData(d => ({ ...d, summary: { text: result.text } }));
-    } catch {
-      setAiError('AI generation failed. Please try again.');
-      setTimeout(() => setAiError(''), 3000);
-    } finally {
-      setAiGenerating(false);
-    }
-  };
 
 
   useEffect(() => {
@@ -508,10 +494,6 @@ const ResumeBuilder = () => {
                 <h2 className="text-lg font-extrabold text-slate-900 mb-2">Professional Summary</h2>
                 <p className="text-xs text-slate-500 mb-4">A brief overview of your experience, skills, and goals.</p>
                 <textarea value={data.summary.text} onChange={e => setData(d => ({...d, summary: { text: e.target.value }}))} rows={8} placeholder="Senior AI Engineer with 5+ years building production LLM systems..." className="w-full p-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#FF6B47] resize-none" />
-                <button onClick={handleAiSummary} disabled={aiGenerating} className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#FF6B47] to-[#ff8366] disabled:opacity-60 text-white text-sm font-bold rounded-lg">
-                  {aiGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                  {aiGenerating ? 'Generating…' : 'Generate with AI'}
-                </button>
               </div>
             )}
 
