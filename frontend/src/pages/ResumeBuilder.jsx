@@ -24,8 +24,8 @@ const EMPTY_DATA = {
   summary: { text: '' },
   experiences: [{ id: '1', company: '', role: '', period: '', bullets: ['', ''] }],
   education: [{ id: '1', school: '', degree: '', period: '', cgpa: '' }],
-  skills: [''],
-  skillCategories: [],
+  skills: [],
+  skillCategories: [{ id: '1', category: '', skills: '' }],
   certifications: [{ id: '1', name: '', issuer: '', date: '' }],
   languages: [{ id: '1', name: 'English', level: 'Native' }],
 };
@@ -49,6 +49,7 @@ const ResumeBuilder = () => {
   const [loadError, setLoadError] = useState('');
   const [loadingResume, setLoadingResume] = useState(!!id);
   const [atsBanner, setAtsBanner] = useState(null);
+  const [confirmClear, setConfirmClear] = useState(false);
   const [originalFileBase64, setOriginalFileBase64] = useState('');
   const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -68,8 +69,10 @@ const ResumeBuilder = () => {
           summary: { text: r.summary || '' },
           experiences: r.experiences?.length ? r.experiences.map(e => ({ ...e, id: e.id || String(Math.random()) })) : EMPTY_DATA.experiences,
           education: r.education?.length ? r.education.map(e => ({ ...e, id: e.id || String(Math.random()) })) : EMPTY_DATA.education,
-          skills: r.skills?.length ? r.skills : EMPTY_DATA.skills,
-          skillCategories: r.skill_categories?.length ? r.skill_categories : [],
+          skills: [],
+          skillCategories: r.skill_categories?.length
+            ? r.skill_categories.map((c, i) => ({ id: String(i + 1), category: c.category || '', skills: Array.isArray(c.skills) ? c.skills.join(', ') : c.skills || '' }))
+            : r.skills?.length ? [{ id: '1', category: 'Skills', skills: r.skills.join(', ') }] : EMPTY_DATA.skillCategories,
           certifications: r.certifications?.length ? r.certifications.map(c => ({ ...c, id: c.id || String(Math.random()) })) : EMPTY_DATA.certifications,
           languages: r.languages || EMPTY_DATA.languages,
         });
@@ -116,8 +119,10 @@ const ResumeBuilder = () => {
           summary: { text: r.data.summary || '' },
           experiences: r.data.experiences?.length ? r.data.experiences : EMPTY_DATA.experiences,
           education: r.data.education?.length ? r.data.education : EMPTY_DATA.education,
-          skills: r.data.skills?.length ? r.data.skills : EMPTY_DATA.skills,
-          skillCategories: r.data.skillCategories?.length ? r.data.skillCategories : [],
+          skills: [],
+          skillCategories: r.data.skillCategories?.length
+            ? r.data.skillCategories.map((c, i) => ({ id: c.id || String(i + 1), category: c.category || '', skills: Array.isArray(c.skills) ? c.skills.join(', ') : c.skills || '' }))
+            : r.data.skills?.length ? [{ id: '1', category: 'Skills', skills: r.data.skills.join(', ') }] : EMPTY_DATA.skillCategories,
           certifications: r.data.certifications?.length ? r.data.certifications : EMPTY_DATA.certifications,
           languages: r.data.languages?.length ? r.data.languages : EMPTY_DATA.languages,
         });
@@ -134,7 +139,8 @@ const ResumeBuilder = () => {
       summary: data.summary.text,
       experiences: data.experiences,
       education: data.education,
-      skills: data.skills,
+      skills: [],
+      skillCategories: data.skillCategories,
       certifications: data.certifications,
       languages: data.languages,
       customSections,
@@ -293,7 +299,7 @@ const ResumeBuilder = () => {
       children.push(new Paragraph({ children: [new TextRun({ text: langs.map(l => `${l.name} (${l.level})`).join(', '), size: 20 })] }));
     }
 
-    customSections.filter(cs => cs.content).forEach(cs => {
+    customSections.filter(cs => cs.name).forEach(cs => {
       children.push(new Paragraph({ children: [new TextRun({ text: cs.name.toUpperCase(), bold: true, size: 22 })], spacing: { before: 200, after: 80 } }));
       children.push(new Paragraph({ children: [new TextRun({ text: cs.content, size: 20 })] }));
     });
@@ -317,10 +323,10 @@ const ResumeBuilder = () => {
   const removeEdu = (eid) => setData(d => ({ ...d, education: d.education.filter(e => e.id !== eid) }));
   const updateEdu = (eid, field, value) => setData(d => ({ ...d, education: d.education.map(e => e.id === eid ? { ...e, [field]: value } : e) }));
 
-  // Skills helpers
-  const addSkill = () => setData(d => ({ ...d, skills: [...d.skills, ''] }));
-  const updateSkill = (i, value) => setData(d => ({ ...d, skills: d.skills.map((s, si) => si === i ? value : s) }));
-  const removeSkill = (i) => setData(d => ({ ...d, skills: d.skills.filter((_, si) => si !== i) }));
+  // Skill category helpers
+  const addSkillCategory = () => setData(d => ({ ...d, skillCategories: [...(d.skillCategories || []), { id: String(Date.now()), category: '', skills: '' }] }));
+  const removeSkillCategory = (sid) => setData(d => ({ ...d, skillCategories: d.skillCategories.filter(c => c.id !== sid) }));
+  const updateSkillCategory = (sid, field, value) => setData(d => ({ ...d, skillCategories: d.skillCategories.map(c => c.id === sid ? { ...c, [field]: value } : c) }));
 
   // Certifications helpers
   const addCert = () => setData(d => ({ ...d, certifications: [...d.certifications, { id: String(Date.now()), name: '', issuer: '', date: '' }] }));
@@ -351,6 +357,15 @@ const ResumeBuilder = () => {
   const activeCustomSection = activeSection.startsWith('custom_')
     ? customSections.find(cs => `custom_${cs.id}` === activeSection)
     : null;
+
+  const handleClearAll = () => {
+    setData(EMPTY_DATA);
+    setCustomSections([]);
+    setResumeTitle('Untitled Resume');
+    setActiveSection('personal');
+    localStorage.removeItem(LS_DRAFT_KEY);
+    setConfirmClear(false);
+  };
 
   if (loadingResume) {
     return (
@@ -400,6 +415,17 @@ const ResumeBuilder = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {confirmClear ? (
+                <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+                  <span className="text-xs font-semibold text-red-700">Clear all data?</span>
+                  <button onClick={handleClearAll} className="px-2.5 py-1 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-md">Yes</button>
+                  <button onClick={() => setConfirmClear(false)} className="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-md">No</button>
+                </div>
+              ) : (
+                <button onClick={() => setConfirmClear(true)} className="px-4 py-2 rounded-lg bg-white border border-slate-200 text-sm font-bold text-slate-500 hover:bg-red-50 hover:text-red-500 hover:border-red-200 flex items-center gap-1.5 transition-colors">
+                  <X className="w-4 h-4" /> Clear All
+                </button>
+              )}
               <button onClick={() => setShowPreview(true)} className="px-4 py-2 rounded-lg bg-white border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5">
                 <Eye className="w-4 h-4" /> Preview
               </button>
@@ -584,17 +610,31 @@ const ResumeBuilder = () => {
 
             {activeSection === 'skills' && (
               <div>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-2">
                   <h2 className="text-lg font-extrabold text-slate-900">Skills</h2>
-                  <button onClick={addSkill} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#FFF3EE] text-[#FF6B47] text-xs font-bold hover:bg-[#FF6B47] hover:text-white transition">
-                    <Plus className="w-3.5 h-3.5" /> Add Skill
+                  <button onClick={addSkillCategory} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#FFF3EE] text-[#FF6B47] text-xs font-bold hover:bg-[#FF6B47] hover:text-white transition">
+                    <Plus className="w-3.5 h-3.5" /> Add Category
                   </button>
                 </div>
-                <div className="space-y-2">
-                  {data.skills.map((s, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <input placeholder="e.g. Python, React, SQL" value={s} onChange={e => updateSkill(i, e.target.value)} className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#FF6B47]" />
-                      <button onClick={() => removeSkill(i)} className="p-2 text-red-500"><Trash2 className="w-4 h-4" /></button>
+                <p className="text-xs text-slate-500 mb-4">Add a category name and list skills separated by commas.</p>
+                <div className="space-y-3">
+                  {(data.skillCategories || []).map(c => (
+                    <div key={c.id} className="flex items-start gap-2">
+                      <div className="flex-1 grid grid-cols-[160px_1fr] gap-2">
+                        <input
+                          placeholder="e.g. Programming"
+                          value={c.category}
+                          onChange={e => updateSkillCategory(c.id, 'category', e.target.value)}
+                          className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold focus:outline-none focus:border-[#FF6B47]"
+                        />
+                        <input
+                          placeholder="e.g. Python, Java, React"
+                          value={c.skills}
+                          onChange={e => updateSkillCategory(c.id, 'skills', e.target.value)}
+                          className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#FF6B47]"
+                        />
+                      </div>
+                      <button onClick={() => removeSkillCategory(c.id)} className="p-2 text-red-400 hover:text-red-600 mt-0.5"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   ))}
                 </div>
@@ -759,7 +799,7 @@ const ResumeBuilder = () => {
                   <p className="text-[9px] text-slate-700">{data.languages.filter(l => l.name).map(l => `${l.name} (${l.level})`).join(' · ')}</p>
                 </div>
               )}
-              {customSections.filter(cs => cs.content).map(cs => (
+              {customSections.filter(cs => cs.name).map(cs => (
                 <div key={cs.id} className="mb-3">
                   <div className="text-[10px] font-bold tracking-wider mb-1" style={{ color: template.color }}>{cs.name.toUpperCase()}</div>
                   <p className="text-[9px] text-slate-700 leading-relaxed whitespace-pre-line">{cs.content}</p>
@@ -890,7 +930,7 @@ const ResumeBuilder = () => {
                       <p className="text-sm text-slate-700">{data.languages.filter(l => l.name).map(l => `${l.name} (${l.level})`).join(' · ')}</p>
                     </div>
                   )}
-                  {customSections.filter(cs => cs.content).map(cs => (
+                  {customSections.filter(cs => cs.name).map(cs => (
                     <div key={cs.id} className="mb-5">
                       <div className="text-xs font-extrabold tracking-widest mb-2" style={{ color: template.color }}>{cs.name.toUpperCase()}</div>
                       <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{cs.content}</p>
