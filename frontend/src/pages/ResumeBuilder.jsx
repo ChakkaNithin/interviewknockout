@@ -258,20 +258,21 @@ const ResumeBuilder = () => {
       });
     }
 
-    const skills = data.skills.filter(s => s);
-    if (data.skillCategories?.length > 0) {
+    const filledCategories = (data.skillCategories || []).filter(c => c.category || c.skills);
+    if (filledCategories.length > 0) {
       children.push(new Paragraph({ children: [new TextRun({ text: 'SKILLS', bold: true, size: 22 })], spacing: { before: 200, after: 80 } }));
-      data.skillCategories.forEach(cat => {
-        const skillStr = Array.isArray(cat.skills) ? cat.skills.join(', ') : cat.skills;
+      filledCategories.forEach(cat => {
+        const skillStr = Array.isArray(cat.skills) ? cat.skills.join(', ') : (cat.skills || '');
+        const label = cat.category ? `${cat.category}: ` : '';
         children.push(new Paragraph({
           children: [
-            new TextRun({ text: `${cat.category}`, bold: true, size: 20 }),
-            new TextRun({ text: `\t${skillStr}`, size: 20 }),
+            new TextRun({ text: label, bold: true, size: 20 }),
+            new TextRun({ text: skillStr, size: 20 }),
           ],
-          spacing: { after: 40 },
+          spacing: { after: 60 },
         }));
       });
-    } else if (skills.length) {
+    } else if (data.skills?.filter(s => s).length) {
       children.push(new Paragraph({ children: [new TextRun({ text: 'SKILLS', bold: true, size: 22 })], spacing: { before: 200, after: 80 } }));
       children.push(new Paragraph({ children: [new TextRun({ text: skills.join(', '), size: 20 })], spacing: { after: 100 } }));
     }
@@ -760,9 +761,9 @@ const ResumeBuilder = () => {
                   <div className="text-[10px] font-bold tracking-wider mb-1" style={{ color: template.color }}>SKILLS</div>
                   {data.skillCategories?.length > 0 ? (
                     <div className="space-y-0.5">
-                      {data.skillCategories.map((cat, i) => (
+                      {data.skillCategories.filter(c => c.category || c.skills).map((cat, i) => (
                         <div key={i} className="flex gap-1.5 text-[9px]">
-                          <span className="font-bold text-slate-800 shrink-0 w-24">{cat.category}</span>
+                          <span className="font-bold text-slate-800 shrink-0 w-32">{cat.category}{cat.category ? ':' : ''}</span>
                           <span className="text-slate-600">{Array.isArray(cat.skills) ? cat.skills.join(', ') : cat.skills}</span>
                         </div>
                       ))}
@@ -891,9 +892,9 @@ const ResumeBuilder = () => {
                       <div className="text-xs font-extrabold tracking-widest mb-2" style={{ color: template.color }}>SKILLS</div>
                       {data.skillCategories?.length > 0 ? (
                         <div className="space-y-1.5">
-                          {data.skillCategories.map((cat, i) => (
+                          {data.skillCategories.filter(c => c.category || c.skills).map((cat, i) => (
                             <div key={i} className="flex gap-3 text-sm">
-                              <span className="font-bold text-slate-800 shrink-0 w-44">{cat.category}</span>
+                              <span className="font-bold text-slate-800 shrink-0 w-48">{cat.category}{cat.category ? ':' : ''}</span>
                               <span className="text-slate-600">{Array.isArray(cat.skills) ? cat.skills.join(', ') : cat.skills}</span>
                             </div>
                           ))}
