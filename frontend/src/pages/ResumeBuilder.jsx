@@ -49,7 +49,6 @@ const ResumeBuilder = () => {
   const [loadError, setLoadError] = useState('');
   const [loadingResume, setLoadingResume] = useState(!!id);
   const [atsBanner, setAtsBanner] = useState(null);
-  const [draftRestored, setDraftRestored] = useState(false);
   const [originalFileBase64, setOriginalFileBase64] = useState('');
   const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -89,8 +88,6 @@ const ResumeBuilder = () => {
       setData(draft.data);
       if (draft.customSections) setCustomSections(draft.customSections);
       if (draft.resumeTitle) setResumeTitle(draft.resumeTitle);
-      setDraftRestored(true);
-      setTimeout(() => setDraftRestored(false), 4000);
     } catch { /* ignore */ }
   }, [id]);
 
@@ -384,15 +381,6 @@ const ResumeBuilder = () => {
             All ATS fixes applied — your resume was upgraded from score {atsBanner.score} by AI. Review and save.
           </div>
           <button onClick={() => setAtsBanner(null)} className="text-white/60 hover:text-white text-lg leading-none">×</button>
-        </div>
-      )}
-      {draftRestored && (
-        <div className="bg-[#4F8EF7] text-white px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            <span>💾</span>
-            Draft restored — your unsaved changes have been recovered.
-          </div>
-          <button onClick={() => setDraftRestored(false)} className="text-white/60 hover:text-white text-lg leading-none">×</button>
         </div>
       )}
       <div className="max-w-[1400px] mx-auto px-4 py-6">
