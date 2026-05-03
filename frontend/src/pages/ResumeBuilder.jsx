@@ -31,6 +31,7 @@ const EMPTY_DATA = {
 };
 
 const LANGUAGE_LEVELS = ['Native', 'Fluent', 'Advanced', 'Intermediate', 'Basic'];
+const LS_DRAFT_KEY = 'ik_resume_draft';
 
 const ResumeBuilder = () => {
   const { id } = useParams();
@@ -48,35 +49,62 @@ const ResumeBuilder = () => {
   const [loadError, setLoadError] = useState('');
   const [loadingResume, setLoadingResume] = useState(!!id);
   const [atsBanner, setAtsBanner] = useState(null);
+  const [draftRestored, setDraftRestored] = useState(false);
   const [originalFileBase64, setOriginalFileBase64] = useState('');
   const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [modalCanScroll, setModalCanScroll] = useState(false);
   const modalBodyRef = useRef(null);
+  const draftTimerRef = useRef(null);
 
-  // Load ATS-fixed resume if coming from ATS Checker
+  // Load ATS prefill (priority 1) or localStorage draft (priority 2) — new resumes only
   useEffect(() => {
     if (id) return;
     try {
       const prefill = JSON.parse(sessionStorage.getItem('ik_ats_prefill') || 'null');
-      if (!prefill?.resumeData) return;
-      const r = prefill.resumeData;
-      setData({
-        personal: r.personal || EMPTY_DATA.personal,
-        summary: { text: r.summary || '' },
-        experiences: r.experiences?.length ? r.experiences.map(e => ({ ...e, id: e.id || String(Math.random()) })) : EMPTY_DATA.experiences,
-        education: r.education?.length ? r.education.map(e => ({ ...e, id: e.id || String(Math.random()) })) : EMPTY_DATA.education,
-        skills: r.skills?.length ? r.skills : EMPTY_DATA.skills,
-        skillCategories: r.skill_categories?.length ? r.skill_categories : [],
-        certifications: r.certifications?.length ? r.certifications.map(c => ({ ...c, id: c.id || String(Math.random()) })) : EMPTY_DATA.certifications,
-        languages: r.languages || EMPTY_DATA.languages,
-      });
-      if (r.personal?.name) setResumeTitle(`${r.personal.name} — ATS Fixed`);
-      setAtsBanner({ score: prefill.score });
-      if (prefill.originalFileBase64) setOriginalFileBase64(prefill.originalFileBase64);
-      sessionStorage.removeItem('ik_ats_prefill');
+      if (prefill?.resumeData) {
+        const r = prefill.resumeData;
+        setData({
+          personal: r.personal || EMPTY_DATA.personal,
+          summary: { text: r.summary || '' },
+          experiences: r.experiences?.length ? r.experiences.map(e => ({ ...e, id: e.id || String(Math.random()) })) : EMPTY_DATA.experiences,
+          education: r.education?.length ? r.education.map(e => ({ ...e, id: e.id || String(Math.random()) })) : EMPTY_DATA.education,
+          skills: r.skills?.length ? r.skills : EMPTY_DATA.skills,
+          skillCategories: r.skill_categories?.length ? r.skill_categories : [],
+          certifications: r.certifications?.length ? r.certifications.map(c => ({ ...c, id: c.id || String(Math.random()) })) : EMPTY_DATA.certifications,
+          languages: r.languages || EMPTY_DATA.languages,
+        });
+        if (r.personal?.name) setResumeTitle(`${r.personal.name} — ATS Fixed`);
+        setAtsBanner({ score: prefill.score });
+        if (prefill.originalFileBase64) setOriginalFileBase64(prefill.originalFileBase64);
+        sessionStorage.removeItem('ik_ats_prefill');
+        return;
+      }
+    } catch { /* ignore */ }
+
+    // No ATS prefill — try restoring localStorage draft
+    try {
+      const draft = JSON.parse(localStorage.getItem(LS_DRAFT_KEY) || 'null');
+      if (!draft?.data) return;
+      setData(draft.data);
+      if (draft.customSections) setCustomSections(draft.customSections);
+      if (draft.resumeTitle) setResumeTitle(draft.resumeTitle);
+      setDraftRestored(true);
+      setTimeout(() => setDraftRestored(false), 4000);
     } catch { /* ignore */ }
   }, [id]);
+
+  // Auto-save draft to localStorage on every change (new resumes only)
+  useEffect(() => {
+    if (id) return;
+    if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(LS_DRAFT_KEY, JSON.stringify({ data, customSections, resumeTitle }));
+      } catch { /* ignore */ }
+    }, 800);
+    return () => { if (draftTimerRef.current) clearTimeout(draftTimerRef.current); };
+  }, [data, customSections, resumeTitle, id]);
 
   useEffect(() => {
     if (!id) return;
@@ -128,6 +156,7 @@ const ResumeBuilder = () => {
         setResumeId(r.id);
         window.history.replaceState(null, '', `/builder/${r.id}`);
       }
+      localStorage.removeItem(LS_DRAFT_KEY);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
       if (!sessionStorage.getItem('ik_upsell_shown')) {
@@ -355,6 +384,15 @@ const ResumeBuilder = () => {
             All ATS fixes applied — your resume was upgraded from score {atsBanner.score} by AI. Review and save.
           </div>
           <button onClick={() => setAtsBanner(null)} className="text-white/60 hover:text-white text-lg leading-none">×</button>
+        </div>
+      )}
+      {draftRestored && (
+        <div className="bg-[#4F8EF7] text-white px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <span>💾</span>
+            Draft restored — your unsaved changes have been recovered.
+          </div>
+          <button onClick={() => setDraftRestored(false)} className="text-white/60 hover:text-white text-lg leading-none">×</button>
         </div>
       )}
       <div className="max-w-[1400px] mx-auto px-4 py-6">
