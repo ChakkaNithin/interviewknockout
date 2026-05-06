@@ -169,7 +169,7 @@ const Pricing = () => {
           <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 text-[#FF6B47] text-xs font-bold uppercase tracking-wider mb-5">
             <Award className="w-3.5 h-3.5" /> Simple, One-Time Pricing
           </motion.div>
-          <motion.h1 variants={fadeUp} className="text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight mb-5">
+          <motion.h1 variants={fadeUp} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight mb-5">
             Pay once. <span className="text-[#FF6B47]">Land the interview.</span>
           </motion.h1>
           <motion.p variants={fadeUp} className="text-lg text-slate-600 mb-8 max-w-2xl mx-auto leading-relaxed">
@@ -318,7 +318,8 @@ const Pricing = () => {
             transition={{ duration: 0.5, ease, delay: 0.1 }}
             className="bg-white rounded-2xl border border-slate-100 overflow-hidden"
           >
-            <table className="w-full">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[480px]">
               <thead>
                 <tr className="border-b border-slate-100">
                   <th className="text-left p-4 text-sm font-bold text-slate-500 uppercase tracking-wider">Feature</th>
@@ -346,6 +347,7 @@ const Pricing = () => {
                 ))}
               </tbody>
             </table>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -393,37 +395,6 @@ const Pricing = () => {
       </section>
 
       {/* CTA */}
-      <section className="py-16 bg-gradient-to-br from-[#0F3D2E] to-[#14543F] relative overflow-hidden">
-        <motion.div
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          animate={{ scale: [1, 1.06, 1], opacity: [0.06, 0.12, 0.06] }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-          style={{ background: 'radial-gradient(circle at 60% 50%, #FF6B47, transparent 65%)' }}
-        />
-        <motion.div
-          className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative"
-          initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-          transition={{ duration: 0.55, ease }}
-        >
-          <h2 className="text-3xl lg:text-4xl font-extrabold text-white mb-4">Ready to land your next interview?</h2>
-          <p className="text-white/80 mb-8">One payment. Expert review. Results in 48 hours.</p>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-              <Link to={user ? '/builder' : '/signup'}
-                className="inline-flex items-center gap-2 px-8 py-4 bg-white hover:bg-slate-50 text-[#0F3D2E] rounded-full font-bold shadow-lg transition-colors">
-                Build My Resume Free <ArrowRight className="w-5 h-5" />
-              </Link>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-              <button onClick={() => handleUpgrade(plans[1])}
-                className="inline-flex items-center gap-2 px-8 py-4 bg-[#FF6B47] hover:bg-[#ff5630] text-white rounded-full font-bold shadow-lg transition-colors">
-                Get Pro — ₹499 <ArrowRight className="w-5 h-5" />
-              </button>
-            </motion.div>
-          </div>
-        </motion.div>
-      </section>
-
       <Footer />
     </div>
   );

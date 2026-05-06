@@ -55,6 +55,8 @@ credentials.json
 *token.json*
 *credentials.json*
 
-# Allow project .env files (private repo — for multi-system use)
-!backend/.env
+# Allow frontend .env (private repo)
 !frontend/.env
+
+# Backend lives in its own repo
+backend/

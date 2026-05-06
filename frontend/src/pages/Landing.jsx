@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { usePayment } from '../context/PaymentContext';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -209,6 +210,15 @@ const ResumeThumbnail = ({ template, index }) => {
             <div className="font-extrabold text-[5px] pb-0.5 mb-0.5 border-b" style={{ color: template.color, borderColor: template.color + '40' }}>TECHNICAL SKILLS</div>
             <div className="text-slate-700 text-[3.8px] leading-[1.35]">{d.skills}</div>
           </div>
+          <div className="mt-1.5">
+            <div className="font-extrabold text-[5px] pb-0.5 mb-0.5 border-b" style={{ color: template.color, borderColor: template.color + '40' }}>KEY PROJECTS</div>
+            {d.projects.map((p, i) => (
+              <div key={i} className="mb-0.5">
+                <div className="font-bold text-[4px] text-slate-900">{p.name}</div>
+                <div className="text-slate-600 text-[3.7px] leading-[1.3]">{p.desc}</div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -244,6 +254,15 @@ const ResumeThumbnail = ({ template, index }) => {
                 {e.bullets.map((b, j) => <div key={j} className="text-slate-700 text-[3.8px] leading-[1.3]">• {b}</div>)}
               </div>
             ))}
+            <div className="font-extrabold text-[5px] mb-0.5 mt-1" style={{ color: template.color }}>TECHNICAL SKILLS</div>
+            <div className="text-slate-700 text-[3.8px] leading-[1.35]">{d.skills}</div>
+            <div className="font-extrabold text-[5px] mb-0.5 mt-1" style={{ color: template.color }}>KEY PROJECTS</div>
+            {d.projects.map((p, i) => (
+              <div key={i} className="mb-0.5 pl-1.5 border-l" style={{ borderColor: template.color + '50' }}>
+                <div className="font-bold text-[4px] text-slate-900">{p.name}</div>
+                <div className="text-slate-600 text-[3.7px] leading-[1.3]">{p.desc}</div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -272,7 +291,7 @@ const ResumeThumbnail = ({ template, index }) => {
                   <div className="text-[3.3px] text-slate-500">{e.period}</div>
                 </div>
                 <div className="text-[4px] italic mb-0.5" style={{ color: template.color }}>{e.company}</div>
-                {e.bullets.slice(0, 2).map((b, j) => <div key={j} className="text-slate-700 text-[3.7px] leading-[1.3]">• {b}</div>)}
+                {e.bullets.map((b, j) => <div key={j} className="text-slate-700 text-[3.7px] leading-[1.3]">• {b}</div>)}
               </div>
             ))}
           </div>
@@ -280,11 +299,22 @@ const ResumeThumbnail = ({ template, index }) => {
             <div>
               <div className="font-extrabold text-[5px] mb-0.5" style={{ color: template.color }}>SKILLS</div>
               <div className="text-slate-700 text-[3.5px] leading-[1.35]">{d.skills}</div>
+              <div className="font-extrabold text-[5px] mb-0.5 mt-1" style={{ color: template.color }}>CERTIFICATIONS</div>
+              <div className="text-slate-700 text-[3.5px] leading-[1.35]">{d.certs}</div>
             </div>
             <div>
               <div className="font-extrabold text-[5px] mb-0.5" style={{ color: template.color }}>EDUCATION</div>
               <div className="text-slate-700 text-[3.5px] leading-[1.35]">{d.edu}</div>
             </div>
+          </div>
+          <div className="mt-1.5 pt-1 border-t border-slate-100">
+            <div className="font-extrabold text-[5px] mb-0.5" style={{ color: template.color }}>KEY PROJECTS</div>
+            {d.projects.map((p, i) => (
+              <div key={i} className="mb-0.5 flex gap-1 items-start">
+                <div className="font-bold text-[4px] text-slate-900 flex-shrink-0">{p.name}:</div>
+                <div className="text-slate-600 text-[3.7px] leading-[1.3]">{p.desc}</div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -420,6 +450,7 @@ const Landing = () => {
   const [openFaq, setOpenFaq] = useState(0);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { openPayment } = usePayment();
 
   const roadmapSteps = [
     { step: '01', icon: Target,   color: '#0D6B4F', bg: '#E8F5F0', border: '#BBE8D8', title: 'ATS Score',          sub: 'Expert Review',     desc: 'Our experts analyse your resume against top ATS systems and give you a detailed compatibility report with actionable fixes.',  cta: 'See How It Works', href: '/ats-checker' },
@@ -432,7 +463,7 @@ const Landing = () => {
   const heroCards = [
     { template: mockTemplates[0], index: 0, pos: { top: 16, left: 16 },    zIndex: 10, rotate: -6, delay: 0.30, floatY: [0, -10, 0], floatDur: 5.0 },
     { template: mockTemplates[4], index: 2, pos: { top: 0,  right: 32 },   zIndex: 20, rotate:  3, delay: 0.45, floatY: [0,  -8, 0], floatDur: 4.2 },
-    { template: mockTemplates[5], index: 3, pos: { bottom: 16, left: 64 }, zIndex: 30, rotate:  2, delay: 0.60, floatY: [0, -12, 0], floatDur: 5.8 },
+    { template: mockTemplates[3], index: 3, pos: { bottom: 16, left: 64 }, zIndex: 30, rotate:  2, delay: 0.60, floatY: [0, -12, 0], floatDur: 5.8 },
     { template: mockTemplates[2], index: 1, pos: { bottom: 32, right: 0 }, zIndex: 20, rotate: -3, delay: 0.75, floatY: [0,  -7, 0], floatDur: 4.7 },
   ];
 
@@ -469,7 +500,7 @@ const Landing = () => {
               </div>
             </motion.div>
 
-            <motion.h1 variants={fadeUp} className="text-5xl lg:text-6xl font-extrabold text-slate-900 leading-[1.05] tracking-tight mb-5">
+            <motion.h1 variants={fadeUp} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-[1.05] tracking-tight mb-5">
               Applying everywhere{' '}
               <span className="relative inline-block">
                 <span className="relative z-10">but not getting</span>
@@ -510,7 +541,7 @@ const Landing = () => {
           </motion.div>
 
           {/* Right column — floating resume cards */}
-          <div className="relative h-[520px]">
+          <div className="relative h-[520px] hidden lg:block">
             {heroCards.map(({ template, index, pos, zIndex, rotate, delay, floatY, floatDur }, i) => (
               <motion.div
                 key={i}
@@ -591,7 +622,7 @@ const Landing = () => {
             <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F5F0] text-[#0D6B4F] text-xs font-bold uppercase tracking-wider mb-4">
               <TrendingUp className="w-3.5 h-3.5" /> Your Success Roadmap
             </motion.div>
-            <motion.h2 variants={fadeUp} className="text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">
+            <motion.h2 variants={fadeUp} className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">
               From resume to interview — we handle it all
             </motion.h2>
             <motion.p variants={fadeUp} className="text-lg text-slate-600">
@@ -705,7 +736,7 @@ const Landing = () => {
             <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F5F0] text-[#0D6B4F] text-xs font-bold uppercase tracking-wider mb-4">
               <ShieldCheck className="w-3.5 h-3.5" /> ATS Optimized
             </motion.div>
-            <motion.h2 variants={fadeUp} className="text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight mb-5">
+            <motion.h2 variants={fadeUp} className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold text-slate-900 tracking-tight mb-5">
               Resumes that beat ATS and get you noticed
             </motion.h2>
             <motion.p variants={fadeUp} className="text-lg text-slate-600 leading-relaxed mb-6">
@@ -764,9 +795,9 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div variants={stagger(0.08)} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} className="text-center mb-12 max-w-3xl mx-auto">
             <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F5F0] text-[#0D6B4F] text-xs font-bold uppercase tracking-wider mb-4">
-              <Users className="w-3.5 h-3.5" /> Recruiter Network
+              <Users className="w-3.5 h-3.5" /> Our Recruiter Network
             </motion.div>
-            <motion.h2 variants={fadeUp} className="text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">
+            <motion.h2 variants={fadeUp} className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">
               Get discovered by top companies & recruiters
             </motion.h2>
             <motion.p variants={fadeUp} className="text-lg text-slate-600">
@@ -802,7 +833,7 @@ const Landing = () => {
             <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFF3EE] text-[#FF6B47] text-xs font-bold uppercase tracking-wider mb-4">
               <Sparkles className="w-3.5 h-3.5" /> Templates
             </motion.div>
-            <motion.h2 variants={fadeUp} className="text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">
+            <motion.h2 variants={fadeUp} className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">
               Pick a template and build your resume in minutes
             </motion.h2>
             <motion.p variants={fadeUp} className="text-lg text-slate-600">
@@ -815,9 +846,9 @@ const Landing = () => {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: '-60px' }}
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"
           >
-            {mockTemplates.slice(0, 8).map((t, i) => (
+            {mockTemplates.map((t, i) => (
               <motion.div key={t.id} variants={fadeUp}>
                 <div onClick={() => navigate(user ? '/builder' : '/signup')} className="group cursor-pointer block">
                   <ResumeThumbnail template={t} index={i} />
@@ -847,7 +878,7 @@ const Landing = () => {
             <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white text-[#0F3D2E] text-xs font-bold uppercase tracking-wider mb-4">
               <Zap className="w-3.5 h-3.5" /> AI Features
             </motion.div>
-            <motion.h2 variants={fadeUp} className="text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">Fully equipped for the age of AI</motion.h2>
+            <motion.h2 variants={fadeUp} className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">Fully equipped for the age of AI</motion.h2>
             <motion.p variants={fadeUp} className="text-lg text-slate-600">The AI Resume Builder helps you create resumes faster and smarter.</motion.p>
           </motion.div>
           <motion.div
@@ -895,7 +926,7 @@ const Landing = () => {
               <div className="flex gap-0.5">{[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-5 h-5 fill-[#FF6B47] text-[#FF6B47]" />)}</div>
               <span className="text-sm font-bold text-slate-700">4.8/5 · 5,187 Reviews</span>
             </motion.div>
-            <motion.h2 variants={fadeUp} className="text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">Loved by job seekers worldwide</motion.h2>
+            <motion.h2 variants={fadeUp} className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">Loved by job seekers worldwide</motion.h2>
             <motion.p variants={fadeUp} className="text-lg text-slate-600">Thousands of candidates get more interview calls every week using InterviewKnockout.</motion.p>
           </motion.div>
           <motion.div
@@ -964,7 +995,7 @@ const Landing = () => {
             <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white text-[#FF6B47] text-xs font-bold uppercase tracking-wider mb-4 border border-[#FF6B47]/20">
               <Award className="w-3.5 h-3.5" /> Pricing
             </motion.div>
-            <motion.h2 variants={fadeUp} className="text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">Simple, transparent pricing</motion.h2>
+            <motion.h2 variants={fadeUp} className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">Simple, transparent pricing</motion.h2>
             <motion.p variants={fadeUp} className="text-lg text-slate-600">Start free. Upgrade when you're ready to land interviews faster.</motion.p>
           </motion.div>
           <motion.div
@@ -1006,9 +1037,18 @@ const Landing = () => {
                     </li>
                   ))}
                 </ul>
-                <Link to={user ? '/pricing' : '/signup'} className={`block text-center py-3 rounded-full font-bold transition-all ${p.highlighted ? 'bg-[#FF6B47] hover:bg-[#ff5630] text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}>
-                  {p.cta}
-                </Link>
+                {p.price === 0 ? (
+                  <Link to={user ? '/builder' : '/signup'} className="block text-center py-3 rounded-full font-bold transition-all bg-slate-900 hover:bg-slate-800 text-white">
+                    {p.cta}
+                  </Link>
+                ) : (
+                  <button
+                    onClick={() => openPayment(p.id)}
+                    className={`w-full py-3 rounded-full font-bold transition-all ${p.highlighted ? 'bg-[#FF6B47] hover:bg-[#ff5630] text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}
+                  >
+                    {p.cta}
+                  </button>
+                )}
               </motion.div>
             ))}
           </motion.div>

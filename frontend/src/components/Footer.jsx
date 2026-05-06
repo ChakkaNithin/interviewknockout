@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Twitter, Linkedin, Facebook, Instagram, Mail } from 'lucide-react';
+import { Linkedin, Facebook, Instagram, Mail } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 const Footer = () => {
@@ -40,12 +40,6 @@ const Footer = () => {
       active: true,
     },
     {
-      Icon: Twitter,
-      href: null,
-      label: 'Twitter — coming soon',
-      active: false,
-    },
-    {
       Icon: Linkedin,
       href: null,
       label: 'LinkedIn — coming soon',
@@ -77,7 +71,7 @@ const Footer = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={label}
-                    className="w-9 h-9 rounded-full bg-white/10 hover:bg-[#FF6B47] flex items-center justify-center transition-colors duration-200"
+                    className="w-11 h-11 rounded-full bg-white/10 hover:bg-[#FF6B47] flex items-center justify-center transition-colors duration-200"
                     title={label}
                   >
                     <Icon className="w-4 h-4 text-white" />
@@ -87,7 +81,7 @@ const Footer = () => {
                     key={label}
                     aria-label={label}
                     title={label}
-                    className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center opacity-40 cursor-not-allowed"
+                    className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center opacity-40 cursor-not-allowed"
                   >
                     <Icon className="w-4 h-4 text-white" />
                   </button>

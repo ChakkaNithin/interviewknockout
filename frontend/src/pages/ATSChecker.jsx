@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
+import { usePayment } from '../context/PaymentContext';
 import { CheckCircle2, Target, FileSearch, TrendingUp, Award, Clock, ArrowRight, Sparkles, ShieldCheck, Zap } from 'lucide-react';
 import { ease } from '../lib/animations';
 
@@ -67,6 +68,7 @@ const plans = [
 ];
 
 const ATSChecker = () => {
+  const { openPayment } = usePayment();
   return (
     <div className="min-h-screen bg-white overflow-hidden">
       <Navbar />
@@ -80,7 +82,7 @@ const ATSChecker = () => {
           <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 text-[#FF6B47] text-xs font-bold uppercase tracking-wider mb-6">
             <Sparkles className="w-3.5 h-3.5" /> Done-For-You ATS Optimisation
           </motion.div>
-          <motion.h1 variants={fadeUp} className="text-4xl lg:text-6xl font-extrabold text-slate-900 tracking-tight mb-5 leading-tight">
+          <motion.h1 variants={fadeUp} className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-extrabold text-slate-900 tracking-tight mb-5 leading-tight">
             90% of resumes are rejected<br className="hidden sm:block" />
             <span className="text-[#FF6B47]"> before a human ever sees them.</span>
           </motion.h1>
@@ -252,12 +254,12 @@ const ATSChecker = () => {
                   </div>
                   <p className={`text-sm leading-relaxed ${plan.highlighted ? 'text-white/75' : 'text-slate-500'}`}>{plan.desc}</p>
                 </div>
-                <Link
-                  to="/pricing"
+                <button
+                  onClick={() => openPayment(plan.id)}
                   className={`w-full flex items-center justify-center gap-2 py-3 rounded-full font-bold mb-6 transition-colors ${plan.highlighted ? 'bg-[#FF6B47] hover:bg-[#ff5630] text-white' : 'bg-[#0F3D2E] hover:bg-[#1a5c45] text-white'}`}
                 >
                   {plan.cta} <ArrowRight className="w-4 h-4" />
-                </Link>
+                </button>
                 <ul className="space-y-2.5">
                   {plan.features.map(f => (
                     <li key={f} className="flex items-start gap-2 text-sm">

@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Document, Packer, Paragraph, TextRun, AlignmentType, BorderStyle } from 'docx';
 import { saveAs } from 'file-saver';
 import Navbar from '../components/Navbar';
+import ResumePreview, { TemplateThumbnail } from '../components/ResumePreview';
+import { usePayment } from '../context/PaymentContext';
 import { mockTemplates } from '../mock';
 import { resumeApi, atsApi } from '../lib/api';
 import { Plus, Trash2, Save, Eye, Sparkles, User, Briefcase, GraduationCap, Award, Languages, Wrench, ArrowLeft, Loader2, Check, PenLine, X, Download, ChevronDown, ArrowRight, CheckCircle2, Wand2, Search } from 'lucide-react';
@@ -35,6 +37,7 @@ const LS_DRAFT_KEY = 'ik_resume_draft';
 
 const ResumeBuilder = () => {
   const { id } = useParams();
+  const { openPayment } = usePayment();
   const [selectedTemplate, setSelectedTemplate] = useState(mockTemplates[0].id);
   const [activeSection, setActiveSection] = useState('personal');
   const [data, setData] = useState(EMPTY_DATA);
@@ -226,7 +229,7 @@ const ResumeBuilder = () => {
     }));
     if (data.personal.title) {
       children.push(new Paragraph({
-        children: [new TextRun({ text: data.personal.title, size: 26, color: '336699' })],
+        children: [new TextRun({ text: data.personal.title, size: 26 })],
         alignment: AlignmentType.CENTER,
       }));
     }
@@ -249,8 +252,8 @@ const ResumeBuilder = () => {
     if (exps.length) {
       children.push(new Paragraph({ children: [new TextRun({ text: 'WORK EXPERIENCE', bold: true, size: 22 })], spacing: { before: 240, after: 80 } }));
       exps.forEach(exp => {
-        children.push(new Paragraph({ children: [new TextRun({ text: exp.role || '', bold: true, size: 24 }), new TextRun({ text: exp.period ? `\t\t${exp.period}` : '', size: 20, color: '555555' })] }));
-        if (exp.company) children.push(new Paragraph({ children: [new TextRun({ text: exp.company, bold: true, size: 20, color: '336699' })], spacing: { after: 60 } }));
+        children.push(new Paragraph({ children: [new TextRun({ text: exp.role || '', bold: true, size: 24 }), new TextRun({ text: exp.period ? `   |   ${exp.period}` : '', size: 20, color: '555555' })] }));
+        if (exp.company) children.push(new Paragraph({ children: [new TextRun({ text: exp.company, bold: true, size: 20 })], spacing: { after: 60 } }));
         exp.bullets.filter(b => b).forEach(b => {
           children.push(new Paragraph({ children: [new TextRun({ text: b, size: 20 })], bullet: { level: 0 } }));
         });
@@ -466,7 +469,7 @@ const ResumeBuilder = () => {
           </AnimatePresence>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_600px] gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-[220px_1fr_560px] gap-4">
           {/* Sidebar */}
           <div className="bg-white rounded-2xl border border-slate-100 p-3 h-fit sticky top-20">
             <div className="text-xs font-bold text-slate-500 uppercase tracking-wider px-2 mb-2">Sections</div>
@@ -719,100 +722,33 @@ const ResumeBuilder = () => {
           {/* Preview */}
           <div className="bg-slate-100 rounded-2xl p-4 sticky top-20">
             <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 text-center">Live Preview</div>
-            <div className="relative bg-white rounded-lg shadow-xl overflow-hidden" style={{ height: 560 }}>
-            <div className="h-full overflow-y-auto p-6">
-              <div className="pb-3 mb-4 border-b-2" style={{ borderColor: template.color }}>
-                <div className="text-xl font-extrabold text-slate-900">{data.personal.name || 'Your Name'}</div>
-                <div className="font-bold text-sm" style={{ color: template.color }}>{data.personal.title || 'Your Role'}</div>
-                <div className="text-[10px] text-slate-500 mt-1">
-                  {[data.personal.email, data.personal.phone, data.personal.location].filter(Boolean).join(' · ') || 'contact info'}
-                </div>
-                {(data.personal.linkedin || data.personal.github) && (
-                  <div className="text-[10px] text-slate-500">
-                    {[data.personal.linkedin, data.personal.github].filter(Boolean).join(' · ')}
+
+            {/* Template picker */}
+            <div className="grid grid-cols-5 gap-1 sm:gap-1.5 mb-3">
+              {mockTemplates.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setSelectedTemplate(t.id)}
+                  className={`rounded-xl overflow-hidden border-2 transition-all ${selectedTemplate === t.id ? 'border-[#FF6B47] shadow-md' : 'border-transparent hover:border-slate-300'}`}
+                  title={t.name}
+                >
+                  <TemplateThumbnail template={t} />
+                  <div className={`text-center text-[9px] font-bold py-0.5 leading-tight ${selectedTemplate === t.id ? 'text-[#FF6B47]' : 'text-slate-400'}`}>
+                    {t.name}
                   </div>
-                )}
-              </div>
-              {data.summary.text && (
-                <div className="mb-3">
-                  <div className="text-[10px] font-bold tracking-wider mb-1" style={{ color: template.color }}>SUMMARY</div>
-                  <p className="text-[10px] text-slate-700 leading-relaxed">{data.summary.text}</p>
-                </div>
-              )}
-              {data.experiences.some(e => e.company || e.role) && (
-                <div className="mb-3">
-                  <div className="text-[10px] font-bold tracking-wider mb-1.5" style={{ color: template.color }}>EXPERIENCE</div>
-                  {data.experiences.filter(e => e.company || e.role).map(e => (
-                    <div key={e.id} className="mb-2">
-                      <div className="flex items-baseline justify-between">
-                        <div className="text-[11px] font-bold text-slate-900">{e.role}</div>
-                        <div className="text-[9px] text-slate-500">{e.period}</div>
-                      </div>
-                      <div className="text-[10px] font-semibold text-slate-600">{e.company}</div>
-                      <ul className="text-[9px] text-slate-700 list-disc list-inside mt-0.5 space-y-0.5">
-                        {e.bullets.filter(b => b).map((b, i) => <li key={i}>{b}</li>)}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {(data.skillCategories?.length > 0 || data.skills.some(s => s)) && (
-                <div className="mb-3">
-                  <div className="text-[10px] font-bold tracking-wider mb-1" style={{ color: template.color }}>SKILLS</div>
-                  {data.skillCategories?.length > 0 ? (
-                    <div className="space-y-0.5">
-                      {data.skillCategories.filter(c => c.category || c.skills).map((cat, i) => (
-                        <div key={i} className="flex gap-1.5 text-[9px]">
-                          <span className="font-bold text-slate-800 shrink-0 w-32">{cat.category}{cat.category ? ':' : ''}</span>
-                          <span className="text-slate-600">{Array.isArray(cat.skills) ? cat.skills.join(', ') : cat.skills}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[10px] text-slate-700">{data.skills.filter(s => s).join(', ')}</p>
-                  )}
-                </div>
-              )}
-              {data.education.some(e => e.school || e.degree) && (
-                <div className="mb-3">
-                  <div className="text-[10px] font-bold tracking-wider mb-1" style={{ color: template.color }}>EDUCATION</div>
-                  {data.education.filter(e => e.school || e.degree).map(e => (
-                    <div key={e.id} className="text-[10px] mb-1">
-                      <div className="font-bold text-slate-900">{e.degree}</div>
-                      <div className="text-slate-600">{e.school}{e.period ? ` · ${e.period}` : ''}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {data.certifications.some(c => c.name) && (
-                <div className="mb-3">
-                  <div className="text-[10px] font-bold tracking-wider mb-1" style={{ color: template.color }}>CERTIFICATIONS</div>
-                  {data.certifications.filter(c => c.name).map(c => (
-                    <div key={c.id} className="text-[9px] text-slate-700 mb-0.5">
-                      <span className="font-semibold">{c.name}</span>{c.issuer ? ` · ${c.issuer}` : ''}{c.date ? ` · ${c.date}` : ''}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {data.languages.some(l => l.name) && (
-                <div className="mb-3">
-                  <div className="text-[10px] font-bold tracking-wider mb-1" style={{ color: template.color }}>LANGUAGES</div>
-                  <p className="text-[9px] text-slate-700">{data.languages.filter(l => l.name).map(l => `${l.name} (${l.level})`).join(' · ')}</p>
-                </div>
-              )}
-              {customSections.filter(cs => cs.name).map(cs => (
-                <div key={cs.id} className="mb-3">
-                  <div className="text-[10px] font-bold tracking-wider mb-1" style={{ color: template.color }}>{cs.name.toUpperCase()}</div>
-                  <p className="text-[9px] text-slate-700 leading-relaxed whitespace-pre-line">{cs.content}</p>
-                </div>
+                </button>
               ))}
             </div>
-            {/* Live preview scroll indicator */}
-            <div className="absolute bottom-0 left-0 right-0 h-10 pointer-events-none" style={{ background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.95))' }}>
-              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0">
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 animate-bounce" />
+
+            <div className="relative bg-white rounded-lg shadow-xl overflow-hidden" style={{ height: 540 }}>
+              <div className="h-full overflow-y-auto">
+                <ResumePreview data={data} template={template} customSections={customSections} isModal={false} />
               </div>
-            </div>
+              <div className="absolute bottom-0 left-0 right-0 h-10 pointer-events-none" style={{ background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.95))' }}>
+                <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 animate-bounce" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -851,92 +787,8 @@ const ResumeBuilder = () => {
 
               {/* Modal body — enlarged resume preview */}
               <div ref={modalBodyRef} onScroll={handleModalScroll} className="flex-1 overflow-y-auto p-6 bg-slate-50 relative" style={{ minHeight: 0 }}>
-                <div className="bg-white shadow-xl rounded-xl p-8 max-w-[680px] mx-auto" style={{ minHeight: '880px' }}>
-                  <div className="pb-4 mb-5 border-b-2" style={{ borderColor: template.color }}>
-                    <div className="text-3xl font-extrabold text-slate-900">{data.personal.name || 'Your Name'}</div>
-                    <div className="font-bold text-base mt-1" style={{ color: template.color }}>{data.personal.title || 'Your Role'}</div>
-                    <div className="text-sm text-slate-500 mt-1.5">
-                      {[data.personal.email, data.personal.phone, data.personal.location].filter(Boolean).join(' · ') || 'Add your contact info'}
-                    </div>
-                    {(data.personal.linkedin || data.personal.github) && (
-                      <div className="text-sm text-slate-500">
-                        {[data.personal.linkedin, data.personal.github].filter(Boolean).join(' · ')}
-                      </div>
-                    )}
-                  </div>
-                  {data.summary.text && (
-                    <div className="mb-5">
-                      <div className="text-xs font-extrabold tracking-widest mb-2" style={{ color: template.color }}>PROFESSIONAL SUMMARY</div>
-                      <p className="text-sm text-slate-700 leading-relaxed">{data.summary.text}</p>
-                    </div>
-                  )}
-                  {data.experiences.some(e => e.company || e.role) && (
-                    <div className="mb-5">
-                      <div className="text-xs font-extrabold tracking-widest mb-3" style={{ color: template.color }}>WORK EXPERIENCE</div>
-                      {data.experiences.filter(e => e.company || e.role).map(e => (
-                        <div key={e.id} className="mb-4">
-                          <div className="flex items-baseline justify-between">
-                            <div className="text-base font-bold text-slate-900">{e.role}</div>
-                            <div className="text-xs text-slate-500 font-semibold">{e.period}</div>
-                          </div>
-                          <div className="text-sm font-semibold mb-1" style={{ color: template.color }}>{e.company}</div>
-                          <ul className="text-sm text-slate-700 space-y-0.5">
-                            {e.bullets.filter(b => b).map((b, i) => <li key={i} className="flex gap-2"><span className="text-slate-400 mt-0.5">•</span><span>{b}</span></li>)}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {(data.skillCategories?.length > 0 || data.skills.some(s => s)) && (
-                    <div className="mb-5">
-                      <div className="text-xs font-extrabold tracking-widest mb-2" style={{ color: template.color }}>SKILLS</div>
-                      {data.skillCategories?.length > 0 ? (
-                        <div className="space-y-1.5">
-                          {data.skillCategories.filter(c => c.category || c.skills).map((cat, i) => (
-                            <div key={i} className="flex gap-3 text-sm">
-                              <span className="font-bold text-slate-800 shrink-0 w-48">{cat.category}{cat.category ? ':' : ''}</span>
-                              <span className="text-slate-600">{Array.isArray(cat.skills) ? cat.skills.join(', ') : cat.skills}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-slate-700 leading-relaxed">{data.skills.filter(s => s).join(', ')}</p>
-                      )}
-                    </div>
-                  )}
-                  {data.education.some(e => e.school || e.degree) && (
-                    <div className="mb-5">
-                      <div className="text-xs font-extrabold tracking-widest mb-2" style={{ color: template.color }}>EDUCATION</div>
-                      {data.education.filter(e => e.school || e.degree).map(e => (
-                        <div key={e.id} className="mb-2">
-                          <div className="font-bold text-slate-900">{e.degree}</div>
-                          <div className="text-sm text-slate-600">{e.school}{e.period ? ` · ${e.period}` : ''}{e.cgpa ? ` · GPA: ${e.cgpa}` : ''}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {data.certifications.some(c => c.name) && (
-                    <div className="mb-5">
-                      <div className="text-xs font-extrabold tracking-widest mb-2" style={{ color: template.color }}>CERTIFICATIONS</div>
-                      {data.certifications.filter(c => c.name).map(c => (
-                        <div key={c.id} className="text-sm text-slate-700 mb-1">
-                          <span className="font-semibold">{c.name}</span>{c.issuer ? ` · ${c.issuer}` : ''}{c.date ? ` · ${c.date}` : ''}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {data.languages.some(l => l.name) && (
-                    <div className="mb-5">
-                      <div className="text-xs font-extrabold tracking-widest mb-2" style={{ color: template.color }}>LANGUAGES</div>
-                      <p className="text-sm text-slate-700">{data.languages.filter(l => l.name).map(l => `${l.name} (${l.level})`).join(' · ')}</p>
-                    </div>
-                  )}
-                  {customSections.filter(cs => cs.name).map(cs => (
-                    <div key={cs.id} className="mb-5">
-                      <div className="text-xs font-extrabold tracking-widest mb-2" style={{ color: template.color }}>{cs.name.toUpperCase()}</div>
-                      <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{cs.content}</p>
-                    </div>
-                  ))}
+                <div className="bg-white shadow-xl rounded-xl overflow-hidden max-w-[680px] mx-auto" style={{ minHeight: '880px' }}>
+                  <ResumePreview data={data} template={template} customSections={customSections} isModal={true} />
                 </div>
               </div>
               <AnimatePresence>
@@ -1024,10 +876,11 @@ const ResumeBuilder = () => {
                         </li>
                       ))}
                     </ul>
-                    <Link to="/pricing" onClick={() => setShowUpsellModal(false)}
+                    <button
+                      onClick={() => { setShowUpsellModal(false); openPayment('pro'); }}
                       className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#0F3D2E] hover:bg-[#1a5c45] text-white text-sm font-bold transition-colors">
                       Get Pro <ArrowRight className="w-4 h-4" />
-                    </Link>
+                    </button>
                   </div>
 
                   {/* Premium card */}
@@ -1055,10 +908,11 @@ const ResumeBuilder = () => {
                         </li>
                       ))}
                     </ul>
-                    <Link to="/pricing" onClick={() => setShowUpsellModal(false)}
+                    <button
+                      onClick={() => { setShowUpsellModal(false); openPayment('premium'); }}
                       className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#FF6B47] hover:bg-[#ff5630] text-white text-sm font-bold transition-colors">
                       Get Premium <ArrowRight className="w-4 h-4" />
-                    </Link>
+                    </button>
                   </div>
                 </div>
 

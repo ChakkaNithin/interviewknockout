@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { PaymentProvider } from './context/PaymentContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
@@ -80,7 +81,9 @@ function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
+          <PaymentProvider>
+            <AppRoutes />
+          </PaymentProvider>
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>

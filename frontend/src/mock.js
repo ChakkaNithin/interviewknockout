@@ -1,25 +1,18 @@
 // Mock data for resume builder app
 
 export const mockTemplates = [
-  { id: 'double-column', name: 'Double Column', tag: 'Popular', category: 'modern', color: '#0F3D2E' },
-  { id: 'ivy-league', name: 'Ivy League', tag: 'Executive', category: 'classic', color: '#1E3A5F' },
-  { id: 'elegant', name: 'Elegant', tag: 'Professional', category: 'classic', color: '#2D3748' },
-  { id: 'contemporary', name: 'Contemporary', tag: 'New', category: 'modern', color: '#0D6B4F' },
-  { id: 'modern', name: 'Modern', tag: 'Recommended', category: 'modern', color: '#FF6B47' },
-  { id: 'timeline', name: 'Timeline', tag: 'Creative', category: 'creative', color: '#7C3AED' },
-  { id: 'creative', name: 'Creative', tag: 'Design', category: 'creative', color: '#EC4899' },
-  { id: 'stylish', name: 'Stylish', tag: 'Fashion', category: 'creative', color: '#0891B2' },
-  { id: 'single-column', name: 'Single Column', tag: 'Minimal', category: 'simple', color: '#334155' },
-  { id: 'compact', name: 'Compact', tag: 'Efficient', category: 'simple', color: '#64748B' },
-  { id: 'polished', name: 'Polished', tag: 'Clean', category: 'modern', color: '#0F766E' },
-  { id: 'multicolumn', name: 'Multi Column', tag: 'Versatile', category: 'modern', color: '#B45309' },
+  { id: 'classic',    name: 'Classic',    tag: 'Popular',        layout: 'classic',   color: '#0F3D2E' },
+  { id: 'sidebar',    name: 'Sidebar',    tag: 'Modern',         layout: 'sidebar',   color: '#1E3A5F' },
+  { id: 'executive',  name: 'Executive',  tag: 'Professional',   layout: 'executive', color: '#0D3D8C' },
+  { id: 'bold',       name: 'Bold',       tag: 'Creative',       layout: 'bold',      color: '#FF6B47' },
+  { id: 'minimal',    name: 'Minimal',    tag: 'Clean',          layout: 'minimal',   color: '#334155' },
 ];
 
 export const mockStats = [
-  { value: '15M+', label: 'Resumes Optimized' },
-  { value: '10M+', label: 'Job Matches Found' },
-  { value: '11 Yrs', label: 'Helping Job Seekers' },
-  { value: '1M+', label: 'Interview Calls Generated' },
+  { value: '1,200+', label: 'Resumes Optimized' },
+  { value: '850+',   label: 'Job Matches Found' },
+  { value: '3 Yrs',  label: 'Helping Job Seekers' },
+  { value: '400+',   label: 'Interview Calls Generated' },
 ];
 
 export const mockFeatures = [
@@ -54,12 +47,12 @@ export const mockFeatures = [
 ];
 
 export const mockTestimonials = [
-  { name: 'Jacqueline', role: 'Marketing Manager', rating: 5, text: 'Excellent and easy. No hassle no fuss. Landed my dream job in 2 weeks!', avatar: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?crop=entropy&cs=srgb&fm=jpg&q=85&w=200', daysAgo: '1 day ago' },
-  { name: 'Carla', role: 'Product Designer', rating: 4, text: 'The platform is great. Templates are beautiful and ATS-friendly. Still learning all the features.', avatar: 'https://images.pexels.com/photos/30004323/pexels-photo-30004323.jpeg?auto=compress&cs=tinysrgb&w=200', daysAgo: '1 day ago' },
-  { name: 'Ricardo O.', role: 'Software Engineer', rating: 5, text: 'Pretty intuitive. Suggestions made sense. Formatting the CV which usually is a pain was super easy.', avatar: 'https://images.pexels.com/photos/14589344/pexels-photo-14589344.jpeg?auto=compress&cs=tinysrgb&w=200', daysAgo: '4 days ago' },
-  { name: 'Julien', role: 'Data Analyst', rating: 5, text: 'Built a CV in 2 hours flat. I can adapt it to different templates, I love it! Highly recommend!', avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?crop=entropy&cs=srgb&fm=jpg&q=85&w=200', daysAgo: '2 days ago' },
-  { name: 'Sarah M.', role: 'Solutions Engineer', rating: 5, text: 'InterviewKnockout changed my life: One week and four interviews later, I will be making 150% more.', avatar: 'https://images.pexels.com/photos/15640958/pexels-photo-15640958.jpeg?auto=compress&cs=tinysrgb&w=200', daysAgo: '3 days ago' },
-  { name: 'Priya K.', role: 'AI Engineer', rating: 5, text: 'The ATS checker caught issues I never would have seen. Got 3 interview calls in a week.', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?crop=entropy&cs=srgb&fm=jpg&q=85&w=200', daysAgo: '5 days ago' },
+  { name: 'Priya Sharma', role: 'Product Manager, Bangalore', rating: 5, text: 'Got 4 interview calls in 10 days after using InterviewKnockout. The ATS optimization made a huge difference!', avatar: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?crop=entropy&cs=srgb&fm=jpg&q=85&w=200', daysAgo: '2 days ago' },
+  { name: 'Arjun Mehta', role: 'Software Engineer, Hyderabad', rating: 5, text: 'Built my entire resume in under 2 hours. The templates are clean and the download just works perfectly.', avatar: 'https://images.pexels.com/photos/14589344/pexels-photo-14589344.jpeg?auto=compress&cs=tinysrgb&w=200', daysAgo: '3 days ago' },
+  { name: 'Sneha Reddy', role: 'Data Analyst, Chennai', rating: 5, text: 'The JD tailoring feature is brilliant. Matched my resume to the job description and landed my dream role!', avatar: 'https://images.pexels.com/photos/15640958/pexels-photo-15640958.jpeg?auto=compress&cs=tinysrgb&w=200', daysAgo: '1 day ago' },
+  { name: 'Rahul Nair', role: 'Business Analyst, Mumbai', rating: 5, text: 'Super easy to use. Formatting used to take me days — done in 1 hour here. Highly recommend to everyone.', avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?crop=entropy&cs=srgb&fm=jpg&q=85&w=200', daysAgo: '4 days ago' },
+  { name: 'Kavya Iyer', role: 'UI/UX Designer, Pune', rating: 5, text: 'Loved how the resume looked instantly professional. Got shortlisted by 3 top companies within a week.', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?crop=entropy&cs=srgb&fm=jpg&q=85&w=200', daysAgo: '5 days ago' },
+  { name: 'Vikram Patel', role: 'DevOps Engineer, Delhi', rating: 5, text: 'InterviewKnockout helped me land a 60% salary hike. The curated job matches were spot on for my profile.', avatar: 'https://images.pexels.com/photos/30004323/pexels-photo-30004323.jpeg?auto=compress&cs=tinysrgb&w=200', daysAgo: '6 days ago' },
 ];
 
 export const mockPricing = [

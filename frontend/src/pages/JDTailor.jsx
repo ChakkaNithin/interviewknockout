@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
+import { usePayment } from '../context/PaymentContext';
 import { CheckCircle2, FileText, ArrowRight, Sparkles, Target, Zap, Clock, ShieldCheck, BarChart2, PenLine, Search } from 'lucide-react';
 import { ease } from '../lib/animations';
 
@@ -53,6 +54,7 @@ const plans = [
 ];
 
 const JDTailor = () => {
+  const { openPayment } = usePayment();
   return (
     <div className="min-h-screen bg-white overflow-hidden">
       <Navbar />
@@ -63,7 +65,7 @@ const JDTailor = () => {
           <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 text-[#4F8EF7] text-xs font-bold uppercase tracking-wider mb-6">
             <PenLine className="w-3.5 h-3.5" /> Done-For-You JD Tailoring
           </motion.div>
-          <motion.h1 variants={fadeUp} className="text-4xl lg:text-6xl font-extrabold text-slate-900 tracking-tight mb-5 leading-tight">
+          <motion.h1 variants={fadeUp} className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-extrabold text-slate-900 tracking-tight mb-5 leading-tight">
             Generic resumes don't get interviews.
             <span className="text-[#4F8EF7]"> Tailored ones do.</span>
           </motion.h1>
@@ -194,10 +196,11 @@ const JDTailor = () => {
                   <div className={`text-[11px] font-bold uppercase tracking-wider mb-3 ${plan.highlighted ? 'text-white/50' : 'text-slate-400'}`}>One-Time Payment · No Subscription</div>
                   <p className={`text-sm leading-relaxed ${plan.highlighted ? 'text-white/75' : 'text-slate-500'}`}>{plan.desc}</p>
                 </div>
-                <Link to="/pricing"
+                <button
+                  onClick={() => openPayment(plan.id)}
                   className={`w-full flex items-center justify-center gap-2 py-3 rounded-full font-bold mb-6 transition-colors ${plan.highlighted ? 'bg-[#FF6B47] hover:bg-[#ff5630] text-white' : 'bg-[#0F3D2E] hover:bg-[#1a5c45] text-white'}`}>
                   {plan.cta} <ArrowRight className="w-4 h-4" />
-                </Link>
+                </button>
                 <ul className="space-y-2.5">
                   {plan.features.map(f => (
                     <li key={f} className="flex items-start gap-2 text-sm">

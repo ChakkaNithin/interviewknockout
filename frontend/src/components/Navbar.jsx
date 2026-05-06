@@ -47,7 +47,7 @@ const Navbar = () => {
 
           {/* Desktop Nav */}
           <div className="hidden lg:flex items-center gap-1">
-            <Link to={user ? '/builder' : '/'} className="px-4 py-2 text-sm font-semibold text-slate-700 hover:text-[#0F3D2E] transition-colors">
+            <Link to={user ? '/builder' : '/login'} className="px-4 py-2 text-sm font-semibold text-slate-700 hover:text-[#0F3D2E] transition-colors">
               Resume Builder
             </Link>
 
@@ -84,9 +84,6 @@ const Navbar = () => {
             <Link to="/pricing" className="px-4 py-2 text-sm font-semibold text-slate-700 hover:text-[#0F3D2E] transition-colors">
               Pricing
             </Link>
-            <a href="/#features" className="px-4 py-2 text-sm font-semibold text-slate-700 hover:text-[#0F3D2E] transition-colors">
-              Features
-            </a>
           </div>
 
           {/* Right CTA */}
@@ -131,7 +128,7 @@ const Navbar = () => {
           </div>
 
           {/* Mobile toggle */}
-          <button className="lg:hidden p-2" onClick={() => setMobileOpen(!mobileOpen)}>
+          <button className="lg:hidden p-3" onClick={() => setMobileOpen(!mobileOpen)}>
             {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
@@ -141,7 +138,7 @@ const Navbar = () => {
       {mobileOpen && (
         <div className="lg:hidden border-t border-slate-100 bg-white">
           <div className="px-4 py-3 space-y-1">
-            <Link to={user ? '/builder' : '/'} onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-slate-50 text-sm font-semibold text-slate-700">Resume Builder</Link>
+            <Link to={user ? '/builder' : '/login'} onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-lg hover:bg-slate-50 text-sm font-semibold text-slate-700">Resume Builder</Link>
             <div className="px-3 pt-2 pb-1 text-xs font-bold text-slate-400 uppercase tracking-wider">AI Tools</div>
             {tools.map(({ label, to, icon: Icon, color }) => (
               <Link key={to} to={to} onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 text-sm font-semibold text-slate-700">
