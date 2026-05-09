@@ -36,8 +36,8 @@ class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false, error: null }; }
   static getDerivedStateFromError(error) { return { hasError: true, error }; }
   componentDidCatch(error, info) {
-    console.error('[ErrorBoundary] Uncaught error:', error);
-    console.error('[ErrorBoundary] Component stack:', info?.componentStack);
+    // Intentionally removed detailed component stack trace from console to prevent info leakage
+    console.error('[ErrorBoundary] Uncaught error occurred.');
   }
   render() {
     if (this.state.hasError) {

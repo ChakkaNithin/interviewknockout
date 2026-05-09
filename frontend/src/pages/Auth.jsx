@@ -86,6 +86,18 @@ const Auth = ({ mode = 'login' }) => {
       setError('Password must be at least 8 characters.');
       return;
     }
+    if (password.length > 128) {
+      setError('Password must be less than 128 characters.');
+      return;
+    }
+    if (email.length > 254) {
+      setError('Email is too long.');
+      return;
+    }
+    if (!isLogin && name.length > 100) {
+      setError('Name is too long.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -241,6 +253,7 @@ const Auth = ({ mode = 'login' }) => {
                     onChange={e => setForm({ ...form, name: e.target.value })}
                     placeholder="John Doe"
                     autoComplete="name"
+                    maxLength={100}
                     className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0F3D2E] focus:ring-2 focus:ring-[#0F3D2E]/10 transition"
                   />
                 </div>
@@ -260,6 +273,7 @@ const Auth = ({ mode = 'login' }) => {
                   onChange={e => setForm({ ...form, email: e.target.value })}
                   placeholder="you@example.com"
                   autoComplete="email"
+                  maxLength={254}
                   className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0F3D2E] focus:ring-2 focus:ring-[#0F3D2E]/10 transition"
                 />
               </div>
@@ -278,6 +292,7 @@ const Auth = ({ mode = 'login' }) => {
                   onChange={e => setForm({ ...form, password: e.target.value })}
                   placeholder="At least 8 characters"
                   autoComplete={isLogin ? 'current-password' : 'new-password'}
+                  maxLength={128}
                   className="w-full pl-10 pr-10 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0F3D2E] focus:ring-2 focus:ring-[#0F3D2E]/10 transition"
                 />
                 <button
