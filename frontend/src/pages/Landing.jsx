@@ -465,7 +465,7 @@ const ResumeUploadSection = ({ user }) => {
       if (user?.id) {
         // Logged-in: check Supabase Storage for existing file under their user ID
         const sb = (await import('../lib/supabase')).default;
-        const { data } = await sb.storage.from('resumes').list(user.id);
+        const { data } = await sb.storage.from('interview').list(user.id);
         if (data?.length > 0) setAlreadyUploaded(true);
       } else {
         // Guest: check localStorage
@@ -482,12 +482,13 @@ const ResumeUploadSection = ({ user }) => {
       const safeName = file.name.replace(/[^a-z0-9._-]/gi, '_');
       const path = `${folderKey}/${Date.now()}_${safeName}`;
       const sb = (await import('../lib/supabase')).default;
-      const { error: upErr } = await sb.storage.from('resumes').upload(path, file, { upsert: false });
+      const { error: upErr } = await sb.storage.from('interview').upload(path, file, { upsert: false });
       if (upErr) throw upErr;
       if (!user?.id) localStorage.setItem(UPLOAD_LS_KEY, '1');
       setDone(true);
     } catch (e) {
-      setError('Upload failed. Please try again.');
+      console.error('[Upload error]', e);
+      setError(e?.message || 'Upload failed. Please try again.');
     } finally {
       setUploading(false);
     }
