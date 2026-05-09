@@ -6,7 +6,7 @@ import { motion, AnimatePresence, useInView } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { mockTemplates, mockStats, mockFeatures, mockTestimonials, mockPricing, mockFaqs, trustedCompanies } from '../mock';
-import { ArrowRight, Star, Check, Sparkles, Target, ShieldCheck, LayoutGrid, SpellCheck, ChevronDown, FileText, Zap, Award, Users, TrendingUp, Search } from 'lucide-react';
+import { ArrowRight, Star, Check, Sparkles, Target, ShieldCheck, LayoutGrid, SpellCheck, ChevronDown, FileText, Zap, Award, Users, TrendingUp, Search, Upload, CheckCircle2, Mail, ScanText, BriefcaseBusiness, Send, Lock } from 'lucide-react';
 import { ease } from '../lib/animations';
 
 const iconMap = { SpellCheck, Target, LayoutGrid, ShieldCheck };
@@ -445,6 +445,234 @@ function BrandLogo({ name }) {
 
 const COMPANY_NAMES = ['Google', 'Microsoft', 'Amazon', 'TCS', 'Adobe', 'Infosys', 'Walmart', 'Deloitte', 'JP Morgan', 'Meta', 'Spotify', 'Oracle'];
 
+// ─── Resume Upload Section ────────────────────────────────────────────────────
+const UPLOAD_LS_KEY = 'ik_resume_uploaded';
+
+const ResumeUploadSection = ({ user }) => {
+  const fileInputRef = useRef(null);
+  const [dragging, setDragging] = useState(false);
+  const [email, setEmail] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [done, setDone] = useState(false);
+  const [alreadyUploaded, setAlreadyUploaded] = useState(false);
+  const [error, setError] = useState('');
+  const [needEmail, setNeedEmail] = useState(false);
+  const [pendingFile, setPendingFile] = useState(null);
+
+  // On mount: check if this user already uploaded
+  React.useEffect(() => {
+    const check = async () => {
+      if (user?.id) {
+        // Logged-in: check Supabase Storage for existing file under their user ID
+        const sb = (await import('../lib/supabase')).default;
+        const { data } = await sb.storage.from('resumes').list(user.id);
+        if (data?.length > 0) setAlreadyUploaded(true);
+      } else {
+        // Guest: check localStorage
+        if (localStorage.getItem(UPLOAD_LS_KEY)) setAlreadyUploaded(true);
+      }
+    };
+    check();
+  }, [user]);
+
+  const uploadToSupabase = async (file, folderKey, contactEmail) => {
+    setUploading(true);
+    setError('');
+    try {
+      const safeName = file.name.replace(/[^a-z0-9._-]/gi, '_');
+      const path = `${folderKey}/${Date.now()}_${safeName}`;
+      const sb = (await import('../lib/supabase')).default;
+      const { error: upErr } = await sb.storage.from('resumes').upload(path, file, { upsert: false });
+      if (upErr) throw upErr;
+      if (!user?.id) localStorage.setItem(UPLOAD_LS_KEY, '1');
+      setDone(true);
+    } catch (e) {
+      setError('Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFile = (file) => {
+    if (!file) return;
+    if (user?.id) {
+      // Logged-in: store under user.id so it's tied to their account
+      uploadToSupabase(file, user.id, user.email);
+    } else {
+      setPendingFile(file);
+      setNeedEmail(true);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    handleFile(e.dataTransfer.files[0]);
+  };
+
+  const handleEmailSubmit = (e) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setNeedEmail(false);
+    // Guest: store under their email as folder key
+    uploadToSupabase(pendingFile, email.trim().replace(/[^a-z0-9@._-]/gi, '_'), email.trim());
+  };
+
+  const points = [
+    { icon: ScanText,          color: '#4F8EF7', bg: '#EEF4FF', title: 'We read your resume like a recruiter', desc: 'Skills, experience, role, seniority — every detail picked up instantly.' },
+    { icon: Target,            color: '#FF6B47', bg: '#FFF3EE', title: 'Matched to roles you\'re built for',   desc: 'Not random listings — jobs that genuinely fit your profile.' },
+    { icon: BriefcaseBusiness, color: '#0D6B4F', bg: '#E8F5F0', title: 'Curated by our team, not a bot',      desc: 'Real humans shortlist your top 5–10 matches personally.' },
+    { icon: Send,              color: '#7C3AED', bg: '#F3EEFF', title: 'Delivered straight to you',           desc: 'No job board signups, no endless scrolling — just your list.' },
+    { icon: TrendingUp,        color: '#F59E0B', bg: '#FFFBEB', title: 'Your next opportunity is out there',  desc: 'Let us find it while you focus on preparing to win the interview.' },
+  ];
+
+  return (
+    <section className="py-20 bg-slate-50 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
+
+        {/* Left */}
+        <motion.div variants={stagger(0.1)} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }}>
+          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EEF4FF] text-[#4F8EF7] text-xs font-bold uppercase tracking-wider mb-4">
+            <Search className="w-3.5 h-3.5" /> Job Match
+          </motion.div>
+          <motion.h2 variants={fadeUp} className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold text-slate-900 tracking-tight mb-5 leading-tight">
+            Upload your resume and<br />
+            <span className="text-[#4F8EF7]">we'll find your next job.</span>
+          </motion.h2>
+          <motion.ul variants={stagger(0.08)} className="space-y-3 mb-8">
+            {points.map(({ icon: Icon, color, bg, title, desc }) => (
+              <motion.li key={title} variants={fadeUp} className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: bg }}>
+                  <Icon className="w-4 h-4" style={{ color }} />
+                </div>
+                <div>
+                  <div className="font-bold text-slate-900 text-sm">{title}</div>
+                  <div className="text-slate-500 text-sm leading-relaxed">{desc}</div>
+                </div>
+              </motion.li>
+            ))}
+          </motion.ul>
+          <motion.div variants={fadeUp} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="inline-block">
+            <button
+              onClick={() => document.getElementById('resume-upload-input')?.click()}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#4F8EF7] hover:bg-[#3a7de8] text-white rounded-full font-bold transition-colors"
+            >
+              Upload my resume <ArrowRight className="w-4 h-4" />
+            </button>
+          </motion.div>
+        </motion.div>
+
+        {/* Right */}
+        <motion.div initial={{ opacity: 0, x: 40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, margin: '-80px' }} transition={{ duration: 0.6, ease }}>
+          <div className="relative bg-gradient-to-br from-[#EEF4FF] via-[#F3EEFF] to-white rounded-3xl p-8 border border-slate-100 shadow-xl">
+
+
+            <div className="relative bg-white rounded-2xl shadow-lg p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-100">
+                <div>
+                  <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Job Match</div>
+                  <div className="text-lg font-black text-slate-900">Upload Resume</div>
+                </div>
+                <motion.div
+                  animate={{ y: [0, -5, 0] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                  className="w-11 h-11 rounded-2xl bg-[#EEF4FF] flex items-center justify-center"
+                >
+                  <FileText className="w-5 h-5 text-[#4F8EF7]" />
+                </motion.div>
+              </div>
+
+              {(done || alreadyUploaded) ? (
+                <div className="flex flex-col items-center justify-center py-6 text-center">
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 14 }}
+                    className="w-16 h-16 rounded-full bg-[#E8F5F0] flex items-center justify-center mb-4">
+                    <CheckCircle2 className="w-8 h-8 text-[#0D6B4F]" />
+                  </motion.div>
+                  <div className="font-extrabold text-slate-900 text-lg mb-2">
+                    {alreadyUploaded && !done ? 'Resume already submitted!' : 'Resume received!'}
+                  </div>
+                  <p className="text-slate-500 text-sm max-w-xs leading-relaxed">
+                    {alreadyUploaded && !done
+                      ? 'We already have your resume. Our team is working on finding your best matches.'
+                      : 'Our team will personally match your top job opportunities and reach out shortly.'}
+                  </p>
+                </div>
+              ) : needEmail ? (
+                <form onSubmit={handleEmailSubmit} className="space-y-4">
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="w-10 h-10 rounded-xl bg-[#EEF4FF] flex items-center justify-center flex-shrink-0">
+                      <Mail className="w-5 h-5 text-[#4F8EF7]" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900 text-sm">One last step</div>
+                      <div className="text-slate-500 text-xs">Where should we send your job matches?</div>
+                    </div>
+                  </div>
+                  <input
+                    type="email" required placeholder="your@email.com" value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4F8EF7]/30 focus:border-[#4F8EF7]"
+                  />
+                  <button type="submit" disabled={uploading}
+                    className="w-full py-3 rounded-full bg-[#4F8EF7] hover:bg-[#3a7de8] text-white font-bold text-sm transition-colors flex items-center justify-center gap-2">
+                    {uploading
+                      ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Uploading…</>
+                      : <>Find my jobs <ArrowRight className="w-4 h-4" /></>}
+                  </button>
+                </form>
+              ) : (
+                <>
+                  <div
+                    onDragOver={e => { e.preventDefault(); setDragging(true); }}
+                    onDragLeave={() => setDragging(false)}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`relative rounded-2xl cursor-pointer transition-all border-2 border-dashed ${dragging ? 'border-[#4F8EF7] bg-[#EEF4FF]' : 'border-slate-200 hover:border-[#4F8EF7] hover:bg-[#F8FAFF]'}`}
+                  >
+                    <input id="resume-upload-input" ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={e => handleFile(e.target.files[0])} />
+                    <div className="flex flex-col items-center justify-center py-8 px-6 text-center gap-3">
+                      {uploading ? (
+                        <>
+                          <div className="w-12 h-12 rounded-2xl bg-[#EEF4FF] flex items-center justify-center">
+                            <div className="w-5 h-5 border-2 border-[#4F8EF7]/30 border-t-[#4F8EF7] rounded-full animate-spin" />
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-800 text-sm">Uploading your resume…</div>
+                            <div className="text-slate-400 text-xs mt-0.5">Almost there</div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <motion.div
+                            animate={dragging ? { y: -6, scale: 1.1 } : { y: 0, scale: 1 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                            className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${dragging ? 'bg-[#4F8EF7]' : 'bg-[#EEF4FF]'}`}
+                          >
+                            <Upload className={`w-5 h-5 ${dragging ? 'text-white' : 'text-[#4F8EF7]'}`} />
+                          </motion.div>
+                          <div>
+                            <div className="font-bold text-slate-900 text-sm mb-0.5">
+                              {dragging ? 'Drop it right here' : 'Drag & drop or click to browse'}
+                            </div>
+                            <div className="text-slate-400 text-xs">{dragging ? "We've got it from here" : 'Any resume format accepted'}</div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  {error && <p className="text-red-500 text-xs mt-3 text-center">{error}</p>}
+                </>
+              )}
+            </div>
+          </div>
+        </motion.div>
+
+      </div>
+    </section>
+  );
+};
+
 // ─── Landing page ─────────────────────────────────────────────────────────────
 const Landing = () => {
   const [openFaq, setOpenFaq] = useState(0);
@@ -790,6 +1018,9 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* ── UPLOAD RESUME ────────────────────────────────────────────────── */}
+      <ResumeUploadSection user={user} />
+
       {/* ── GET DISCOVERED ───────────────────────────────────────────────── */}
       <section className="py-20 bg-gradient-to-b from-[#F8FBF9] to-white overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -947,41 +1178,14 @@ const Landing = () => {
                 <div className="flex gap-0.5 mb-3">{[...Array(t.rating)].map((_, i) => <Star key={i} className="w-4 h-4 fill-[#FF6B47] text-[#FF6B47]" />)}</div>
                 <p className="text-slate-700 leading-relaxed mb-5">"{t.text}"</p>
                 <div className="flex items-center gap-3">
-                  <img src={t.avatar} alt={t.name} className="w-11 h-11 rounded-full object-cover" />
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#0F3D2E] to-[#1a5c45] flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-extrabold text-base">{t.name.charAt(0)}</span>
+                  </div>
                   <div>
                     <div className="font-bold text-slate-900 text-sm">{t.name}</div>
                     <div className="text-xs text-slate-500">{t.role} · {t.daysAgo}</div>
                   </div>
                 </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── STATS ─────────────────────────────────────────────────────────── */}
-      <section className="py-16 bg-[#0F3D2E] relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,107,71,0.15),transparent_50%)]" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div variants={stagger(0.08)} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} className="text-center mb-10">
-            <motion.h2 variants={fadeUp} className="text-3xl lg:text-4xl font-extrabold text-white mb-3">Helping millions of job seekers land interviews</motion.h2>
-            <motion.p variants={fadeUp} className="text-white/70 max-w-2xl mx-auto">InterviewKnockout is a modern resume platform that optimizes resumes, matches jobs, and generates more interview calls with AI.</motion.p>
-          </motion.div>
-          <motion.div
-            variants={stagger(0.1)}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-60px' }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-6"
-          >
-            {mockStats.map(s => (
-              <motion.div
-                key={s.label}
-                variants={{ hidden: { opacity: 0, scale: 0.5, y: 24 }, visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 200, damping: 18 } } }}
-                className="text-center"
-              >
-                <div className="text-4xl lg:text-5xl font-extrabold text-[#FF6B47] mb-1">{s.value}</div>
-                <div className="text-sm text-white/80">{s.label}</div>
               </motion.div>
             ))}
           </motion.div>
@@ -1056,6 +1260,35 @@ const Landing = () => {
             <Link to="/pricing" className="text-sm font-semibold text-slate-700 hover:text-[#0F3D2E] inline-flex items-center gap-1">
               Compare all plans <ArrowRight className="w-4 h-4" />
             </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── STATS ─────────────────────────────────────────────────────────── */}
+      <section className="py-16 bg-[#0F3D2E] relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,107,71,0.15),transparent_50%)]" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div variants={stagger(0.08)} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} className="text-center mb-10">
+            <motion.h2 variants={fadeUp} className="text-3xl lg:text-4xl font-extrabold text-white mb-3">Helping millions of job seekers land interviews</motion.h2>
+            <motion.p variants={fadeUp} className="text-white/70 max-w-2xl mx-auto">InterviewKnockout is a modern resume platform that optimizes resumes, matches jobs, and generates more interview calls with AI and human experts.</motion.p>
+          </motion.div>
+          <motion.div
+            variants={stagger(0.1)}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+            className="grid grid-cols-2 md:grid-cols-4 gap-6"
+          >
+            {mockStats.map(s => (
+              <motion.div
+                key={s.label}
+                variants={{ hidden: { opacity: 0, scale: 0.5, y: 24 }, visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 200, damping: 18 } } }}
+                className="text-center"
+              >
+                <div className="text-4xl lg:text-5xl font-extrabold text-[#FF6B47] mb-1">{s.value}</div>
+                <div className="text-sm text-white/80">{s.label}</div>
+              </motion.div>
+            ))}
           </motion.div>
         </div>
       </section>

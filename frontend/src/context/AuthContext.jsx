@@ -11,6 +11,7 @@ const toAppUser = (supaUser) => {
     name: supaUser.user_metadata?.name || supaUser.user_metadata?.full_name || supaUser.email?.split('@')[0] || '',
     plan: supaUser.user_metadata?.plan || 'free',
     cal_booking_url: supaUser.user_metadata?.cal_booking_url || 'https://cal.com/interviewknockout/interviewknockout-consultation',
+    phone: supaUser.user_metadata?.phone || '',
   };
 };
 
@@ -44,6 +45,11 @@ export const AuthProvider = ({ children }) => {
     if (error) throw error;
     // null session means Supabase email confirmation is ON
     if (!data.session) return null;
+    // Empty identities means this email already had an account — Supabase silently signed them in
+    if (!data.user?.identities?.length) {
+      await supabase.auth.signOut();
+      throw Object.assign(new Error('user already registered'), { code: 'user_already_exists' });
+    }
     return toAppUser(data.user);
   };
 
@@ -68,6 +74,15 @@ export const AuthProvider = ({ children }) => {
     return updated;
   };
 
+  const savePhoneOnce = async (phone) => {
+    if (!phone) return;
+    const { data: { user: fresh } } = await supabase.auth.getUser();
+    if (fresh?.user_metadata?.phone) return; // already saved, never overwrite
+    const { data, error } = await supabase.auth.updateUser({ data: { phone } });
+    if (error) throw error;
+    setUser(toAppUser(data.user));
+  };
+
   const refreshUser = async () => {
     const { data: { user: fresh } } = await supabase.auth.getUser();
     const updated = toAppUser(fresh);
@@ -76,7 +91,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, loginWithGoogle, logout, updatePlan, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, loginWithGoogle, logout, updatePlan, refreshUser, savePhoneOnce }}>
       {children}
     </AuthContext.Provider>
   );

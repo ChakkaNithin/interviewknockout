@@ -6,6 +6,7 @@ import { saveAs } from 'file-saver';
 import Navbar from '../components/Navbar';
 import ResumePreview, { TemplateThumbnail } from '../components/ResumePreview';
 import { usePayment } from '../context/PaymentContext';
+import { useAuth } from '../context/AuthContext';
 import { mockTemplates } from '../mock';
 import { resumeApi, atsApi } from '../lib/api';
 import { Plus, Trash2, Save, Eye, Sparkles, User, Briefcase, GraduationCap, Award, Languages, Wrench, ArrowLeft, Loader2, Check, PenLine, X, Download, ChevronDown, ArrowRight, CheckCircle2, Wand2, Search } from 'lucide-react';
@@ -38,6 +39,7 @@ const LS_DRAFT_KEY = 'ik_resume_draft';
 const ResumeBuilder = () => {
   const { id } = useParams();
   const { openPayment } = usePayment();
+  const { user, savePhoneOnce } = useAuth();
   const [selectedTemplate, setSelectedTemplate] = useState(mockTemplates[0].id);
   const [activeSection, setActiveSection] = useState('personal');
   const [data, setData] = useState(EMPTY_DATA);
@@ -154,6 +156,7 @@ const ResumeBuilder = () => {
     setSaving(true);
     setSaveError('');
     try {
+      if (user && data.personal.phone) savePhoneOnce(data.personal.phone);
       const payload = buildPayload();
       if (resumeId) {
         await resumeApi.update(resumeId, payload);

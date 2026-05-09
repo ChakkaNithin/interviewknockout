@@ -57,6 +57,7 @@ const plans = [
     description: 'Done-for-you ATS Score, JD Tailoring & curated job matches',
     features: [
       'Full ATS Score Report',
+      'Book your 1-1 expert call',
       'Expert Resume Rewrite',
       'JD Tailoring for 1 Job Description',
       '15–20 Curated Job Matches',
@@ -77,6 +78,7 @@ const plans = [
     description: 'Everything in Pro — more jobs, deeper recruiter research',
     features: [
       'Everything in Pro',
+      'Book your 1-1 expert call',
       '30–40 Curated Job Matches',
       'Recruiter Contact Details',
       'Deeper Company Research',

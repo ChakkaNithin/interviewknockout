@@ -9,7 +9,7 @@ export const mockTemplates = [
 ];
 
 export const mockStats = [
-  { value: '1,200+', label: 'Resumes Optimized' },
+  { value: '5,000+', label: 'Resumes Optimized' },
   { value: '850+',   label: 'Job Matches Found' },
   { value: '3 Yrs',  label: 'Helping Job Seekers' },
   { value: '400+',   label: 'Interview Calls Generated' },
@@ -82,6 +82,7 @@ export const mockPricing = [
     description: 'ATS Score, JD Tailoring & 15–20 curated job matches — done for you',
     features: [
       'Full ATS Score Report',
+      'Book your 1-1 expert call',
       'Expert Resume Rewrite',
       'JD Tailoring for 1 Job Description',
       '15–20 Curated Job Matches',
@@ -102,6 +103,7 @@ export const mockPricing = [
     description: 'Everything in Pro — more job matches, deeper recruiter research',
     features: [
       'Everything in Pro',
+      'Book your 1-1 expert call',
       '30–40 Curated Job Matches',
       'Recruiter Contact Details',
       'Deeper Company Research',
