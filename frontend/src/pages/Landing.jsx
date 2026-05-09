@@ -5,7 +5,7 @@ import { usePayment } from '../context/PaymentContext';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { mockTemplates, mockStats, mockFeatures, mockTestimonials, mockPricing, mockFaqs, trustedCompanies } from '../mock';
+import { mockTemplates, mockStats, mockFeatures, mockTestimonials, mockPricing, mockFaqs, trustedCompanies, mockResumeData } from '../mock';
 import { ArrowRight, Star, Check, Sparkles, Target, ShieldCheck, LayoutGrid, SpellCheck, ChevronDown, FileText, Zap, Award, Users, TrendingUp, Search, Upload, CheckCircle2, Mail, ScanText, BriefcaseBusiness, Send, Lock } from 'lucide-react';
 import { ease } from '../lib/animations';
 
@@ -43,81 +43,7 @@ function AtsBar({ label, value, color }) {
   );
 }
 
-// ─── Resume data ───────────────────────────────────────────────────────────────
-const RESUME_DATA = [
-  {
-    name: 'SARAH JOHNSON', title: 'Senior Product Engineer', years: '9+ years',
-    contact: 'sarah.johnson@email.com · (415) 555-0102 · San Francisco, CA',
-    links: 'linkedin.com/in/sjohnson · github.com/sjohnson',
-    summary: 'Senior Product Engineer with 9+ years scaling consumer products from 0→10M users at Google, Meta & Stripe. Expert in distributed systems, React ecosystem, and leading cross-functional teams of 8-12 engineers.',
-    experiences: [
-      { role: 'Senior Software Engineer', company: 'Google', period: '2022 — Present', bullets: ['Led migration of Search ranking pipeline to TPUs, reducing infra cost by $4.2M/yr', 'Mentored team of 8 engineers; promoted 3 to senior roles within 18 months', 'Shipped real-time personalization system serving 2B queries/day at p99 < 50ms'] },
-      { role: 'Software Engineer', company: 'Meta', period: '2019 — 2022', bullets: ['Built News Feed ranking feature reaching 800M DAU; +12% engagement', 'Owned end-to-end A/B testing infra; cut experiment setup time 70%'] },
-      { role: 'Software Engineer', company: 'Stripe', period: '2016 — 2019', bullets: ['Shipped dispute automation saving merchants $85M annually in chargebacks'] },
-    ],
-    projects: [
-      { name: 'Distributed Cache Layer', desc: 'Designed Redis-based caching layer across 12 microservices; reduced DB load by 60% and p99 latency from 320ms → 45ms.' },
-      { name: 'Real-time Event Pipeline', desc: 'Built Kafka + Flink streaming pipeline processing 50M events/day; enabled personalization features for 800M users.' },
-    ],
-    skills: 'Python · Go · TypeScript · React · Next.js · PostgreSQL · Kafka · Redis · AWS · Kubernetes · Terraform',
-    edu: 'B.S. Computer Science · Stanford University, 2016 · GPA 3.9/4.0',
-    certs: 'AWS Solutions Architect · Kubernetes CKA · Google Cloud Professional',
-  },
-  {
-    name: 'MICHAEL CHEN', title: 'Director of Product Management', years: '10+ years',
-    contact: 'michael.chen@email.com · (212) 555-0134 · New York, NY',
-    links: 'linkedin.com/in/mchen · michaelchen.io',
-    summary: 'Product leader with 10+ years driving growth at Airbnb, Uber & Dropbox. Led products generating $180M+ ARR with teams of 25+ designers, engineers, and PMs. MBA from Wharton.',
-    experiences: [
-      { role: 'Director of Product', company: 'Airbnb', period: '2021 — Present', bullets: ['Own Hosts product line ($3.2B GMV); grew host supply 40% YoY', 'Built "Host Insights" analytics suite adopted by 2.4M hosts globally', 'Scaled team from 6 to 22 across product, design & data'] },
-      { role: 'Senior PM', company: 'Uber', period: '2018 — 2021', bullets: ['Launched Uber Reserve in 38 cities; $420M run-rate in Year 1', 'Reduced driver churn by 18% via data-driven incentive redesign'] },
-      { role: 'Product Manager', company: 'Dropbox', period: '2015 — 2018', bullets: ['Shipped Dropbox Paper to 600M users; reached 10M MAU in 14 months'] },
-    ],
-    projects: [
-      { name: 'Host Insights Dashboard', desc: 'Zero-to-one B2B analytics product for 2.4M Airbnb hosts; became top-requested host feature within 6 months of launch.' },
-      { name: 'Uber Reserve Global Rollout', desc: 'Built launch playbook scaled to 38 cities in 4 months; $420M ARR run-rate by end of Year 1.' },
-    ],
-    skills: 'Product Strategy · Roadmapping · SQL · A/B Testing · User Research · Jira · Amplitude · Figma · OKRs',
-    edu: 'MBA · The Wharton School, 2015 · B.S. Economics · UC Berkeley, 2012',
-    certs: 'Pragmatic Product Management · Reforge Growth Series',
-  },
-  {
-    name: 'PRIYA PATEL', title: 'Lead UX Designer', years: '8+ years',
-    contact: 'priya.patel@email.com · (310) 555-0189 · Los Angeles, CA',
-    links: 'linkedin.com/in/ppatel · dribbble.com/ppatel · priyapatel.design',
-    summary: 'Lead UX Designer with 8+ years shaping digital products used by 500M+ people. Design systems expert with portfolio spanning Spotify, Uber, and Airbnb. RGD-certified & DBR Design Award winner 2023.',
-    experiences: [
-      { role: 'Lead Product Designer', company: 'Spotify', period: '2022 — Present', bullets: ['Redesigned Spotify checkout: +22% conversion, $68M incremental ARR', 'Built Encore Design System used by 180+ designers across 40 products', 'Led accessibility audit achieving WCAG 2.2 AA across mobile apps'] },
-      { role: 'Senior Designer', company: 'Uber', period: '2019 — 2022', bullets: ['Owned Rider onboarding in 65+ markets; cut drop-off rate 31%', 'Prototyped safety features shipped to 130M+ monthly active users'] },
-      { role: 'Product Designer', company: 'Airbnb', period: '2016 — 2019', bullets: ['Designed Experiences launch product; grew bookings 4x in 18 months'] },
-    ],
-    projects: [
-      { name: 'Encore Design System', desc: 'Built Spotify\'s unified design system from scratch; adopted by 180+ designers across 40 products, saving ~1,200 design-hours/quarter.' },
-      { name: 'Rider Safety Redesign', desc: 'End-to-end safety UX overhaul at Uber; shipped to 130M+ MAU, reduced safety-incident reports by 22%.' },
-    ],
-    skills: 'Figma · Sketch · Framer · Adobe XD · Principle · User Research · Design Systems · Prototyping · HTML/CSS',
-    edu: 'BFA Graphic Design · Rhode Island School of Design, 2016',
-    certs: 'NN/g UX Certification · IDEO Design Thinking',
-  },
-  {
-    name: 'ALEX RIVERA', title: 'Senior Data Scientist', years: '7+ years',
-    contact: 'alex.rivera@email.com · (206) 555-0127 · Seattle, WA',
-    links: 'linkedin.com/in/arivera · github.com/arivera · medium.com/@arivera',
-    summary: 'Senior Data Scientist with 7+ years building ML systems at Netflix & Lyft. PhD in Statistics from MIT. Built recommendation engines serving 230M users. Published 6 papers at NeurIPS & ICML.',
-    experiences: [
-      { role: 'Senior Data Scientist', company: 'Netflix', period: '2021 — Present', bullets: ['Owned Top-10 Rows recommender: +14% watch time for 230M subscribers', 'Shipped causal inference framework adopted across 40+ experiments/yr', 'Lead ML infra migration to Ray, cutting training time from 16h → 2h'] },
-      { role: 'Data Scientist', company: 'Lyft', period: '2018 — 2021', bullets: ['Built ETA model: 18% more accurate than incumbent; $31M savings/yr', 'Launched surge-pricing optimization lifting GM by $46M annually'] },
-      { role: 'ML Engineer', company: 'Zillow', period: '2016 — 2018', bullets: ['Productionized Zestimate v3: median error 4.5% → 2.1% in 14 months'] },
-    ],
-    projects: [
-      { name: 'Top-10 Rows Recommender', desc: 'Built deep-learning recommendation model serving 230M Netflix subscribers; +14% watch time = ~$200M estimated revenue impact.' },
-      { name: 'Causal Inference Framework', desc: 'Open-sourced internal experimentation toolkit; adopted by 12+ Netflix teams, running 40+ causal studies per year.' },
-    ],
-    skills: 'Python · PyTorch · TensorFlow · Scikit-learn · Ray · Spark · SQL · Snowflake · Airflow · Kubeflow · dbt',
-    edu: 'Ph.D. Statistics · MIT, 2016 · B.S. Mathematics · Caltech, 2011',
-    certs: 'NeurIPS 2023 Best Paper · Kaggle Grandmaster (Top 0.1%)',
-  },
-];
+const RESUME_DATA = mockResumeData;
 
 // ─── Resume Thumbnail ─────────────────────────────────────────────────────────
 const ResumeThumbnail = ({ template, index }) => {
